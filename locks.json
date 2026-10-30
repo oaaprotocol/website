@@ -1,0 +1,50 @@
+{
+  "_help": "Fill in when the locks exist. wallet = Base address (0x...). lock_url = link to the lock proof (UNCX, PinkLock, Safe, BaseScan). Leave empty until ready. The website and Sia both read this file.",
+  "token": {
+    "address": "0x70107c4AA2DC031eF7afc350e03784c2325aBE29"
+  },
+  "allocations": [
+    {
+      "key": "liquidity",
+      "name": "Liquidity Pool",
+      "wallet": "0x8df4b8a383dc81cc3d77084d5e38296554fe2b5f",
+      "lock_label": "UNCX",
+      "lock_url": ""
+    },
+    {
+      "key": "reserve",
+      "name": "Reserved Liquidity / Treasury",
+      "wallet": "0xC394d05d8Da6d1414F1A1b0e8d31fec77FAeB834",
+      "lock_label": "Safe multisig",
+      "lock_url": "https://app.safe.global/home?safe=base:0xC394d05d8Da6d1414F1A1b0e8d31fec77FAeB834"
+    },
+    {
+      "key": "ecosystem",
+      "name": "Ecosystem / Development",
+      "wallet": "0x4e7f0f067d1f9C089aA898c85aEda893d6a5cEC7",
+      "lock_label": "PinkLock",
+      "lock_url": "https://www.pinksale.finance/pinklock/base/record/1054420"
+    },
+    {
+      "key": "marketing",
+      "name": "Marketing / Growth",
+      "wallet": "0x27846eeFECE866aE255483Fc0D6ACB7674CaD79c",
+      "lock_label": "PinkLock",
+      "lock_url": "https://www.pinksale.finance/pinklock/base/record/1054421"
+    },
+    {
+      "key": "team",
+      "name": "Team",
+      "wallet": "0xE8fF894a68e7f5FB3af31d604dc667e1B8394448",
+      "lock_label": "PinkLock",
+      "lock_url": "https://www.pinksale.finance/pinklock/base/record/1054419"
+    },
+    {
+      "key": "community",
+      "name": "Community / Airdrops",
+      "wallet": "0xEB16955372a9D41be3C28c5252aC258f850Abff1",
+      "lock_label": "PinkLock",
+      "lock_url": "https://www.pinksale.finance/pinklock/base/record/1054422"
+    }
+  ]
+}
