@@ -973,20 +973,64 @@ html body .qt-lead{text-align:center;max-width:none}
 @media (max-width:1100px){.ax-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.ax-how ol{grid-template-columns:repeat(2,minmax(0,1fr))}.ax-how li::after{display:none}}
 @media (max-width:860px){.ax-hero,.ax-proof{grid-template-columns:1fr;padding:22px}.ax-preview{position:static;justify-self:start;order:-1}.ax-econ{grid-template-columns:1fr}}
 @media (max-width:600px){.ax{gap:20px}.ax-grid,.ax-how ol{grid-template-columns:1fr}.ax-kpis b{font-size:18px}.ax-bar{flex-direction:column;align-items:stretch}.ax-tabs{overflow-x:auto}.ax-mission{gap:10px;margin-right:56px;padding:10px 10px 10px 14px}.ax-m-list{display:none}.ax-m-price>span,.ax-m-price small{display:none}.ax-m-l{flex:none}.ax-m-price b{font-size:16px}.ax-m-r{gap:10px}.ax-mission .qs-btn{padding:0 14px;height:42px;font-size:10px}.ax-dr-panel{padding:22px 18px}.ax-try-row{flex-direction:column}}
-@media (prefers-reduced-motion:reduce){.ax-card,.ax-mission,.ax-dr-panel,.ax-dr-scrim{transition:none}}</style><template id='qs-tpl-agentverse'></template><script>(function(){
-/* OAA Agent Exchange — Agentverse + x402 marketplace (design preview, no payments yet) */
+@media (prefers-reduced-motion:reduce){.ax-card,.ax-mission,.ax-dr-panel,.ax-dr-scrim{transition:none}}
+/* live agents */
+.ax-card.is-soon{opacity:.72}.ax-card.is-soon:hover{opacity:1}
+.ax-card.is-live .ax-stats div:first-child dd{color:#7ff3ec}
+.ax-card.is-live .ax-stats div:first-child dd::before{content:'';display:inline-block;width:7px;height:7px;margin-right:6px;border-radius:50%;background:#5fdca0;box-shadow:0 0 8px #5fdca0;vertical-align:1px}
+.ax-try-acts{display:flex;flex-wrap:wrap;gap:8px}
+.ax-try-acts .qs-btn{flex:1;min-width:160px;justify-content:center}
+.ax-try-acts .qs-btn[disabled]{opacity:.5;cursor:not-allowed}
+.ax-try input:not([disabled]){background:rgba(0,0,0,.45)}
+.ax-try input:focus{outline:none;border-color:rgba(127,243,236,.7)}
+.ax-out{display:grid;gap:12px;margin-top:6px;padding-top:14px;border-top:1px dashed rgba(255,255,255,.12)}
+.ax-st{margin:0;padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.04);font-size:13px;line-height:1.5;color:#dfe9e8}
+.ax-st.is-bad{background:rgba(255,95,95,.08);color:#ffc3c3}.ax-st.is-warn{background:rgba(255,190,90,.08);color:#ffe0ad}.ax-st.is-ok{background:rgba(95,220,160,.08);color:#b6f2d3}
+.ax-res-h{display:flex;align-items:center;gap:12px}
+.ax-res-h b{display:block;font:700 15px/1.3 var(--qs-body);color:#fff}.ax-res-h small{font-size:12px;color:var(--qs-muted)}
+.ax-g{display:grid;place-items:center;flex:none;width:44px;height:44px;border-radius:12px;font:400 20px/1 var(--qs-display);color:#04201f}
+.ax-tok .ax-g{width:28px;height:28px;border-radius:8px;font-size:12px}
+.ax-g--a{background:#5fdca0}.ax-g--b{background:#7ff3ec}.ax-g--c{background:#f3c56a}.ax-g--d{background:#f39a6a}.ax-g--f{background:#ff6b6b}
+.ax-kpi{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.ax-kpi div{padding:8px 10px;border-radius:10px;background:rgba(0,0,0,.3)}
+.ax-kpi span{display:block;font:700 9.5px var(--qs-body);letter-spacing:.08em;text-transform:uppercase;color:var(--qs-faint)}
+.ax-kpi b{display:block;margin-top:4px;font:700 13px var(--qs-body);color:#fff}
+.ax-out h6{margin:4px 0 0;font:700 10.5px var(--qs-body);letter-spacing:.12em;text-transform:uppercase;color:var(--qs-accent-hi)}
+.ax-checks{display:grid;gap:6px;margin:0;padding:0;list-style:none}
+.ax-checks li{display:flex;gap:10px;padding:9px 10px;border-radius:10px;background:rgba(255,255,255,.03)}
+.ax-checks i{flex:none;width:8px;height:8px;margin-top:6px;border-radius:50%;background:#8fa2a7}
+.ax-checks .is-ok i{background:#5fdca0}.ax-checks .is-warn i{background:#f3c56a}.ax-checks .is-bad i{background:#ff6b6b}.ax-checks .is-info i{background:#7ff3ec}
+.ax-checks b{display:block;font:600 13px/1.35 var(--qs-body);color:#fff}.ax-checks small{display:block;margin-top:2px;font-size:12px;line-height:1.45;color:var(--qs-muted)}
+.ax-tok{display:grid;gap:4px}
+.ax-tok div{display:grid;grid-template-columns:auto auto 1fr auto;align-items:center;gap:10px;padding:7px 10px;border-radius:10px;background:rgba(255,255,255,.03)}
+.ax-tok b{font:700 13px var(--qs-body);color:#fff}.ax-tok small{font-size:11.5px;color:var(--qs-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ax-tok em{font:600 12px var(--qs-body);font-style:normal;color:#e9f1f2}
+.ax-tok .is-spam{opacity:.6}.ax-tok .is-spam small{color:#ffc3c3}
+.ax-links{display:flex;flex-wrap:wrap;gap:14px;margin:0;font-size:12.5px}.ax-links a,.ax-rcpt a{color:#7ff3ec;text-decoration:none}.ax-links a:hover,.ax-rcpt a:hover{text-decoration:underline}
+.ax-rcpt{display:grid;gap:6px;padding:12px;border-radius:12px;border:1px solid rgba(127,243,236,.25);background:rgba(3,8,9,.6);font-size:12.5px}
+.ax-rcpt div{display:flex;justify-content:space-between;gap:12px}.ax-rcpt span{color:var(--qs-faint)}.ax-rcpt b{font-weight:600;color:#e9f1f2;text-align:right}.ax-rcpt code{color:#7ff3ec}
+.ax-disc{margin:0;font-size:11px;line-height:1.5;color:var(--qs-faint)}
+@media (max-width:600px){.ax-kpi{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+.ax-res-h>div:nth-child(2){flex:1;min-width:0}
+.ax-gauge{flex:0 0 150px;margin-left:auto;text-align:right}
+.ax-gauge-l{font:700 11px/1 var(--qs-body);letter-spacing:.08em;text-transform:uppercase;color:#fff;margin-bottom:7px}
+.ax-gauge-bar{position:relative;height:8px;border-radius:99px;background:linear-gradient(90deg,#e5484d 0%,#f76b15 30%,#f5d90a 55%,#46a758 80%,#2fbf71 100%)}
+.ax-gauge-bar i{position:absolute;top:50%;width:14px;height:14px;border-radius:50%;background:#fff;border:3px solid #0b1416;box-shadow:0 0 0 1px rgba(255,255,255,.5),0 2px 6px rgba(0,0,0,.5);transform:translate(-50%,-50%)}
+.ax-gauge-s{display:flex;justify-content:space-between;margin-top:6px;font-size:10px;color:var(--qs-muted)}
+@media(max-width:520px){.ax-res-h{flex-wrap:wrap}.ax-gauge{flex:1 0 100%;margin:6px 0 0;text-align:left}}</style><template id='qs-tpl-agentverse'></template><script>(function(){
+/* OAA Agent Exchange — Agentverse + x402 marketplace. Live: Sentinel, Guardian. Payments: USDC on Base to the OAA Treasury (Safe). */
 var Q=window.QS=window.QS||{};Q.mods=Q.mods||{};
-var STAKE_OFF=0.3;
+var STAKE_OFF=0.3,API='https://sia.oaaprotocol.workers.dev',TREASURY='0xc394d05d8da6d1414f1a1b0e8d31fec77faeb834',USDC='0x833589fcd6edb6e08f4c7c32d4f71b54bda02913';
 var CAT={all:'All agents',security:'Security',market:'Market',research:'Research'};
 var A=[
- {id:'sentinel',name:'Sentinel',cat:'security',role:'Token risk scanner',price:0.10,v:0,
+ {id:'sentinel',name:'Sentinel',cat:'security',role:'Token risk scanner',price:0.10,v:0,live:true,param:'token',
   text:'Checks any token before you buy: honeypot simulation, buy and sell tax, mint and owner rights, blacklist, proxy and liquidity lock.',
-  input:'Token address or DexScreener link',chains:'Base, Ethereum, BNB, Arbitrum, Solana +20',
-  out:['Risk grade A to F','Honeypot and tax simulation','Owner, mint and proxy rights','Liquidity and lock status'],src:'On-chain RPC, GoPlus, DexScreener',sla:'~6 s'},
- {id:'guardian',name:'Guardian',cat:'security',role:'Wallet approval guard',price:0.05,v:1,
-  text:'Scans your wallet for open token approvals and risky contracts, then tells you exactly which ones to revoke.',
-  input:'Wallet address',chains:'Base, Ethereum',
-  out:['Open approvals with risk level','Unlimited allowances flagged','Revoke list in priority order'],src:'On-chain RPC, BaseScan',sla:'~5 s'},
+  input:'Token address or DexScreener link',chains:'Base, Ethereum, BNB Chain, Arbitrum, Polygon, Optimism, Avalanche, Solana',
+  out:['Risk grade A to F with every reason','Honeypot and tax simulation','Owner, mint and proxy rights','Holders, liquidity and lock status'],src:'GoPlus Security, DexScreener',sla:'~6 s'},
+ {id:'guardian',name:'Guardian',cat:'security',role:'Wallet safety report',price:0.50,v:1,live:true,param:'wallet',
+  text:'Scans a Base wallet: a risk grade for every token you hold, likely spam airdrops, and open approvals you should revoke \u2014 in one health score.',
+  input:'Wallet address (Base)',chains:'Base',
+  out:['Wallet health score A to F','Grade per token, spam airdrops flagged','Risky and unlimited approvals with revoke link'],src:'Alchemy (Base), GoPlus Security',sla:'~10 s'},
  {id:'radar',name:'Radar',cat:'market',role:'New launch radar',price:0.25,v:2,
   text:'Watches new token launches on Base and rates each one with the Sentinel engine, so you only see what passes the basic checks.',
   input:'Time window (1 h, 6 h, 24 h)',chains:'Base',
@@ -1046,16 +1090,16 @@ function avatar(v,size){
 var sel=[],filter='all',root=null,DR=null;
 
 function card(a){
- var c=el('article','ax-card');c.dataset.id=a.id;c.dataset.cat=a.cat;
+ var c=el('article','ax-card'+(a.live?' is-live':' is-soon'));c.dataset.id=a.id;c.dataset.cat=a.cat;
  var top=el('div','ax-top');var av=el('div','ax-av');av.innerHTML=avatar(a.v,52);top.appendChild(av);
  var id=el('div','ax-id');id.appendChild(el('h4','',a.name));id.appendChild(el('span','ax-role',a.role));top.appendChild(id);
  var pr=el('div','ax-price');pr.appendChild(el('b','',money(a.price)));pr.appendChild(el('small','','per job'));top.appendChild(pr);c.appendChild(top);
  c.appendChild(el('p','ax-text',a.text));
  var st=el('dl','ax-stats');
- [['Accuracy','At launch'],['Jobs','—'],['Speed',a.sla]].forEach(function(r){var d=el('div');d.appendChild(el('dt','',r[0]));d.appendChild(el('dd','',r[1]));st.appendChild(d)});
+ [['Status',a.live?'Live':'Coming soon'],['Price',money(a.price)],['Speed',a.sla]].forEach(function(r){var d=el('div');d.appendChild(el('dt','',r[0]));d.appendChild(el('dd','',r[1]));st.appendChild(d)});
  c.appendChild(st);
  var ft=el('div','ax-foot');
- var more=el('button','ax-more','Details');more.type='button';more.addEventListener('click',function(){drawer(a)});
+ var more=el('button','ax-more',a.live?'Open':'Details');more.type='button';more.addEventListener('click',function(){drawer(a)});
  var add=el('button','ax-add');add.type='button';add.setAttribute('aria-pressed','false');add.innerHTML="<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' aria-hidden='true'><path d='M12 5v14M5 12h14'/></svg><span>Add</span>";
  add.addEventListener('click',function(){toggle(a.id)});
  ft.appendChild(more);ft.appendChild(add);c.appendChild(ft);return c;
@@ -1075,38 +1119,99 @@ function paint(){if(!root)return;
 function drawer(a){var d=DR,b=$('.ax-dr-body',d);b.textContent='';
  var h=el('div','ax-dr-head');var av=el('div','ax-av ax-av--lg');av.innerHTML=avatar(a.v,72);h.appendChild(av);var t=el('div');t.appendChild(el('p','qs-eyebrow',CAT[a.cat]+' · '+money(a.price)+' per job'));t.appendChild(el('h3','qs-h3',a.name));t.appendChild(el('span','ax-role',a.role));h.appendChild(t);b.appendChild(h);
  b.appendChild(el('p','ax-dr-text',a.text));
- var f=el('div','ax-try');f.appendChild(el('label','',a.input));var row=el('div','ax-try-row');var inp=el('input');inp.type='text';inp.placeholder=a.input;inp.disabled=true;row.appendChild(inp);var go=el('button','qs-btn qs-btn--primary','Run · '+money(a.price));go.type='button';go.disabled=true;row.appendChild(go);f.appendChild(row);
- f.appendChild(el('small','ax-try-note','Preview. Paid runs open with the x402 release; you will pay in USDC on Base and only when a result is delivered.'));b.appendChild(f);
+ var f=el('div','ax-try');f.appendChild(el('label','',a.input));var row=el('div','ax-try-row');var inp=el('input');inp.type='text';inp.placeholder=a.id==='guardian'?'0x\u2026 wallet address':a.input;inp.autocomplete='off';inp.spellcheck=false;inp.disabled=!a.live;row.appendChild(inp);f.appendChild(row);
+ if(a.id==='guardian'&&Q.wallet)inp.value=Q.wallet;
+ var acts=el('div','ax-try-acts'),fr=el('button','qs-btn qs-btn--primary','Run free');fr.type='button';var pd=el('button','qs-btn qs-btn--ghost','Pay '+money(a.price)+' & run');pd.type='button';
+ if(!a.live){fr.disabled=pd.disabled=true;fr.textContent='Coming soon'}acts.appendChild(fr);acts.appendChild(pd);f.appendChild(acts);
+ var note=el('small','ax-try-note',a.live?'Free runs per day are limited. Paid runs: one wallet confirmation in USDC on Base, paid straight to the OAA Treasury \u2014 only charged when a result is delivered.':'This agent is being built. Sentinel and Guardian are live now.');f.appendChild(note);
+ var out=el('div','ax-out');out.hidden=true;f.appendChild(out);b.appendChild(f);
+ if(a.live){freeInfo(a,fr);fr.addEventListener('click',function(){runFree(a,inp,out,fr,pd)});pd.addEventListener('click',function(){runPaid(a,inp,out,fr,pd)});inp.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();fr.disabled?runPaid(a,inp,out,fr,pd):runFree(a,inp,out,fr,pd)}})}
  var g=el('div','ax-dr-grid');
  var o=el('section');o.appendChild(el('h5','','What you get'));var ul=el('ul');a.out.forEach(function(x){ul.appendChild(el('li','',x))});o.appendChild(ul);g.appendChild(o);
- var s=el('section');s.appendChild(el('h5','','Details'));var dl=el('dl','ax-kv');[['Chains',a.chains],['Data sources',a.src],['Typical speed',a.sla],['OAA staker price',money(a.price*(1-STAKE_OFF))],['Receipt','Hash anchored on Base']].forEach(function(r){dl.appendChild(el('dt','',r[0]));dl.appendChild(el('dd','',r[1]))});s.appendChild(dl);g.appendChild(s);
+ var s=el('section');s.appendChild(el('h5','','Details'));var dl=el('dl','ax-kv');[['Chains',a.chains],['Data sources',a.src],['Typical speed',a.sla],['OAA staker price',money(a.price*(1-STAKE_OFF))],['Paid to','OAA Treasury (Safe) \u00b7 USDC on Base'],['Receipt','Answer hash with every result']].forEach(function(r){dl.appendChild(el('dt','',r[0]));dl.appendChild(el('dd','',r[1]))});s.appendChild(dl);g.appendChild(s);
  b.appendChild(g);
  var add=el('button','qs-btn qs-btn--ghost',sel.indexOf(a.id)>-1?'Remove from mission':'Add to mission');add.type='button';add.addEventListener('click',function(){toggle(a.id);close()});b.appendChild(add);
  d.hidden=false;requestAnimationFrame(function(){d.classList.add('is-open')});$('.ax-dr-x',d).focus();
 }
 function close(){var d=DR;if(!d)return;d.classList.remove('is-open');setTimeout(function(){d.hidden=true},200)}
 
+
+/* ---------- live agents ---------- */
+function esc(x){return String(x==null?'':x).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function okInput(a,v){v=v.trim();if(a.id==='guardian')return /^0x[a-fA-F0-9]{40}$/.test(v);return /^0x[a-fA-F0-9]{40}$/.test(v)||/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(v)||/dexscreener\.com\/[a-z0-9]+\/[A-Za-z0-9]{32,66}/i.test(v)}
+function qs(a,v){return a.param+'='+encodeURIComponent(v.trim())}
+function busy(btns,on){btns.forEach(function(b){if(b){b.dataset.t=b.dataset.t||b.textContent;b.disabled=on}})}
+function status(out,txt,kind){out.hidden=false;out.innerHTML="<p class='ax-st"+(kind?' is-'+kind:'')+"'>"+esc(txt)+"</p>"}
+function freeInfo(a,fr){if(!API)return;fetch(API+'/free/'+a.id+'?check=1',{credentials:'omit'}).then(function(r){return r.json()}).then(function(j){if(j&&j.freeLeft!=null){fr.textContent=j.freeLeft>0?'Run free · '+j.freeLeft+' left today':'Free runs used today';fr.disabled=j.freeLeft<=0}}).catch(function(){})}
+function runFree(a,inp,out,fr,pd){var v=inp.value;if(!okInput(a,v)){status(out,a.id==='guardian'?'Paste a wallet address that starts with 0x.':'Paste a token address or a DexScreener link.','bad');return}
+ busy([fr,pd],true);status(out,a.name+' is working…');
+ fetch(API+'/free/'+a.id+'?'+qs(a,v),{credentials:'omit'}).then(function(r){return r.json().then(function(j){return{s:r.status,j:j}})}).then(function(x){
+  if(x.s===200&&x.j.data){show(a,out,x.j.data,null);fr.textContent=x.j.freeLeft>0?'Run free · '+x.j.freeLeft+' left today':'Free runs used today';busy([pd],false);fr.disabled=x.j.freeLeft<=0;return}
+  busy([fr,pd],false);if(x.j.error==='free_used'){fr.textContent='Free runs used today';fr.disabled=true;status(out,'Today’s free runs are used. You can run '+a.name+' for '+money(a.price)+' in USDC.','warn');return}
+  status(out,(x.j.detail||'The agent could not finish. Try again in a minute.'),'bad')}).catch(function(){busy([fr,pd],false);status(out,'The agent cannot be reached right now. Try again in a minute.','bad')})}
+function hex(n){var b=new Uint8Array(n);crypto.getRandomValues(b);return '0x'+[].map.call(b,function(v){return v.toString(16).padStart(2,'0')}).join('')}
+function ub64(h){return JSON.parse(decodeURIComponent(escape(atob(h))))}
+function eb64(o){return btoa(unescape(encodeURIComponent(JSON.stringify(o))))}
+function runPaid(a,inp,out,fr,pd){var v=inp.value;if(!okInput(a,v)){status(out,a.id==='guardian'?'Paste a wallet address that starts with 0x.':'Paste a token address or a DexScreener link.','bad');return}
+ if(!Q.wallet||!Q.eth){status(out,'Connect your wallet first (top right), then press pay again.','warn');if(Q.connectWallet)Q.connectWallet();return}
+ var p=Q.eth,from=Q.wallet,url=API+'/x402/'+a.id+'?'+qs(a,v),need=String(Math.round(a.price*1e6));busy([fr,pd],true);status(out,'Preparing the payment…');
+ p.request({method:'eth_chainId'}).then(function(c){if(String(c).toLowerCase()==='0x2105')return;status(out,'Switch your wallet to Base…');return p.request({method:'wallet_switchEthereumChain',params:[{chainId:'0x2105'}]})})
+ .then(function(){return fetch(url,{credentials:'omit'})}).then(function(r){if(r.status!==402)throw new Error('unexpected');var h=r.headers.get('PAYMENT-REQUIRED');return h?ub64(h):r.json()})
+ .then(function(rq){var x=(rq.accepts||[])[0];
+  if(!x||String(x.payTo).toLowerCase()!==TREASURY||String(x.asset).toLowerCase()!==USDC||String(x.amount)!==need||x.network!=='eip155:8453')throw new Error('mismatch');
+  var now=Math.floor(Date.now()/1000),auth={from:from,to:x.payTo,value:x.amount,validAfter:String(now-600),validBefore:String(now+Math.min(600,Number(x.maxTimeoutSeconds)||120)),nonce:hex(32)};
+  var td={types:{EIP712Domain:[{name:'name',type:'string'},{name:'version',type:'string'},{name:'chainId',type:'uint256'},{name:'verifyingContract',type:'address'}],TransferWithAuthorization:[{name:'from',type:'address'},{name:'to',type:'address'},{name:'value',type:'uint256'},{name:'validAfter',type:'uint256'},{name:'validBefore',type:'uint256'},{name:'nonce',type:'bytes32'}]},primaryType:'TransferWithAuthorization',domain:{name:'USD Coin',version:'2',chainId:8453,verifyingContract:x.asset},message:auth};
+  status(out,'Confirm '+money(a.price)+' USDC to the OAA Treasury in your wallet…');
+  return p.request({method:'eth_signTypedData_v4',params:[from,JSON.stringify(td)]}).then(function(sig){status(out,'Payment signed. '+a.name+' is working…');
+   return fetch(url,{credentials:'omit',headers:{'PAYMENT-SIGNATURE':eb64({x402Version:2,resource:rq.resource,accepted:x,payload:{signature:sig,authorization:auth}})}})})})
+ .then(function(r){return r.json().then(function(j){return{s:r.status,j:j}})}).then(function(x){busy([fr,pd],false);
+  if(x.s===200&&x.j.data){show(a,out,x.j.data,x.j.receipt);return}
+  var e=String((x.j&&x.j.error)||'');status(out,/insufficient|balance/i.test(e)?'Not enough USDC on Base in this wallet. Nothing was charged.':(x.j.detail||'The payment was not accepted ('+(e||'error')+'). Nothing was charged.'),'bad')})
+ .catch(function(e){busy([fr,pd],false);var m=String(e&&e.message||''),c=e&&e.code;
+  status(out,c===4001||/reject|denied|cancel/i.test(m)?'Payment cancelled. Nothing was charged.':m==='mismatch'?'The payment request did not match the listed price or the OAA Treasury. Stopped for your safety.':'The payment could not be completed. Nothing was charged.','bad')})}
+function gcls(g){return 'ax-g ax-g--'+String(g||'F').toLowerCase()}
+function fmtUsd(n){if(n==null)return '\u2014';n=Number(n);return n>=1e6?'$'+(n/1e6).toFixed(2)+'M':n>=1e3?'$'+(n/1e3).toFixed(1)+'K':n>=1?'$'+n.toFixed(2):n>0?'$'+n.toPrecision(3):'$0'}
+function receiptHtml(d,pay){var h=d.receipt&&d.receipt.answerHash;return "<div class='ax-rcpt'><div><span>Answer hash</span><code title='"+esc(h)+"'>"+esc(h?h.slice(0,10)+'…'+h.slice(-6):'—')+"</code></div>"+
+ (pay&&pay.transaction&&/^0x[0-9a-fA-F]{64}$/.test(pay.transaction)?"<div><span>Payment</span><a href='https://basescan.org/tx/"+pay.transaction+"' target='_blank' rel='noopener'>"+money(Number(a_price(d)))+" USDC · BaseScan ↗</a></div>":"<div><span>Run</span><b>Free run</b></div>")+
+ "<div><span>Sources</span><b>"+esc(d.sources||'')+"</b></div></div><p class='ax-disc'>"+esc(d.note||'')+"</p>"}
+function a_price(d){var x=A.filter(function(z){return z.id===d.agent})[0];return x?x.price:0}
+function gauge(sc){var v=Math.max(0,Math.min(100,Number(sc)||0)),lbl=v>=70?'Good':v>=50?'Caution':'Risky';return "<div class='ax-gauge' role='img' aria-label='Safety "+lbl+"'><div class='ax-gauge-l'>"+lbl+"</div><div class='ax-gauge-bar'><i style='left:"+v+"%'></i></div><div class='ax-gauge-s'><span>Risky</span><span>Safe</span></div></div>"}
+function show(a,out,d,pay){out.hidden=false;var h='';
+ if(d.agent==='sentinel'){var m=d.market||{};
+  h+="<div class='ax-res-h'><span class='"+gcls(d.grade)+"'>"+esc(d.grade)+"</span><div><b>"+esc((d.name||'Token')+(d.symbol?' · '+d.symbol:''))+"</b><small>"+esc(d.chainName)+" · score "+esc(d.score)+"/100 · "+esc(d.risk)+" risk</small></div>"+gauge(d.score)+"</div>";
+  h+="<div class='ax-kpi'><div><span>Price</span><b>"+fmtUsd(m.priceUsd)+"</b></div><div><span>Liquidity</span><b>"+fmtUsd(m.liquidityUsd)+"</b></div><div><span>Market cap</span><b>"+fmtUsd(m.marketCapUsd)+"</b></div><div><span>24h volume</span><b>"+fmtUsd(m.volume24hUsd)+"</b></div></div>";
+  h+="<ul class='ax-checks'>"+(d.checks||[]).map(function(c){return "<li class='is-"+esc(c.status)+"'><i></i><div><b>"+esc(c.label)+"</b><small>"+esc(c.detail)+"</small></div></li>"}).join('')+"</ul>";
+  h+="<p class='ax-links'><a href='"+esc(d.explorer)+"' target='_blank' rel='noopener'>Explorer ↗</a>"+(m.url&&/^https:\/\/dexscreener\.com\//.test(m.url)?" <a href='"+esc(m.url)+"' target='_blank' rel='noopener'>DexScreener ↗</a>":'')+"</p>";
+ } else {
+  h+="<div class='ax-res-h'><span class='"+gcls(d.grade)+"'>"+esc(d.grade)+"</span><div><b>Wallet health "+esc(d.score)+"/100</b><small>"+esc(d.wallet.slice(0,6)+'…'+d.wallet.slice(-4))+" · Base · "+esc(d.risk)+" risk</small></div>"+gauge(d.score)+"</div>";
+  h+="<div class='ax-kpi'><div><span>Value checked</span><b>"+((d.tokens||[]).some(function(t){return t.valueUsd!=null})?fmtUsd(d.valueUsd):'—')+"</b></div><div><span>Tokens</span><b>"+esc(d.tokensChecked)+(d.tokensFound>d.tokensChecked?' / '+esc(d.tokensFound):'')+"</b></div><div><span>Spam airdrops</span><b>"+esc(d.spamCount)+"</b></div><div><span>Risky approvals</span><b>"+esc((d.approvals||[]).filter(function(x){return x.level==='bad'||x.level==='warn'}).length)+"</b></div></div>";
+  if((d.approvals||[]).length){h+="<h6>Approvals</h6><ul class='ax-checks'>"+d.approvals.slice(0,12).map(function(x){var st=x.level==='bad'?'bad':x.level==='warn'?'warn':'ok';return "<li class='is-"+st+"'><i></i><div><b>"+esc(x.token)+" → "+esc(x.spenderName||x.spender.slice(0,6)+'…'+x.spender.slice(-4))+"</b><small>"+esc(x.amount)+(x.since?' · since '+esc(x.since):'')+(x.level==='bad'?' · flagged as dangerous, revoke now':x.level==='warn'?' · unlimited, unverified spender':'')+"</small></div></li>"}).join('')+"</ul><p class='ax-links'><a href='"+esc(d.revokeUrl)+"' target='_blank' rel='noopener'>Revoke approvals on revoke.cash ↗</a></p>"}
+  else h+="<p class='ax-st is-ok'>No open token approvals found on Base.</p>";
+  h+="<h6>Tokens</h6><div class='ax-tok'>"+(d.tokens||[]).slice(0,25).map(function(t){return "<div class='"+(t.spam?'is-spam':'')+"'><span class='"+gcls(t.grade)+"'>"+esc(t.grade)+"</span><b>"+esc(t.symbol)+"</b><small>"+(t.spam?'Likely spam airdrop — do not interact':esc((t.flags||[]).slice(0,3).join(' · ')||'No red flags found'))+"</small><em>"+fmtUsd(t.valueUsd)+"</em></div>"}).join('')+"</div>";
+ }
+ out.innerHTML=h+receiptHtml(d,pay);out.scrollIntoView({block:'nearest',behavior:'smooth'})}
+
 function build(p){
  root=el('div','ax');
  root.innerHTML=
  "<header class='ax-hero'><div class='ax-hero-l'><p class='qs-eyebrow'>OAA &middot; Agent Exchange</p><h3 class='qs-h3'>Agents that <em>prove their work.</em></h3>"+
  "<p class='qs-lead'>Hire specialised SI agents per job. Pay a few cents in USDC with x402, get the result in seconds, and receive a receipt on Base that anyone can verify.</p>"+
- "<ul class='ax-pills'><li>Pay per answer</li><li>No result, no charge</li><li>Proof of Answer on Base</li><li>30% off for OAA stakers</li></ul></div>"+
- "<div class='ax-kpis'><div><b>8</b><span>Agents at launch</span></div><div><b>$0.05</b><span>Lowest price per job</span></div><div><b>USDC</b><span>Paid on Base via x402</span></div><div><b>A2A</b><span>Other SI agents can hire them too</span></div></div>"+
- "<span class='ax-preview'><i></i>Design preview &middot; paid runs open with the x402 release</span></header>"+
+ "<ul class='ax-pills'><li>Pay per answer</li><li>No result, no charge</li><li>Paid to the OAA Treasury</li><li>Answer hash with every result</li></ul></div>"+
+ "<div class='ax-kpis'><div><b>2 live</b><span>Sentinel &amp; Guardian &middot; 6 more coming</span></div><div><b>$0.10</b><span>Lowest price per job</span></div><div><b>USDC</b><span>Paid on Base via x402</span></div><div><b>A2A</b><span>Other SI agents can hire them too</span></div></div>"+
+ "<span class='ax-preview'><i></i>Live on Base &middot; free daily runs</span></header>"+
  "<div class='ax-bar'><div class='ax-tabs' role='tablist' aria-label='Filter agents'></div><div class='ax-presets'><span>Sia missions</span></div></div>"+
  "<div class='ax-grid'></div>"+
  "<section class='ax-how'><p class='qs-eyebrow'>How it works</p><ol>"+
  "<li><b>01</b><h5>Pick an agent or a mission</h5><p>Choose one agent, or let Sia combine several into a mission with one price shown upfront.</p></li>"+
  "<li><b>02</b><h5>Pay with x402</h5><p>One wallet confirmation in USDC on Base. No account, no subscription. Agents can pay agents the same way.</p></li>"+
  "<li><b>03</b><h5>Result in seconds</h5><p>Data comes from the chain and named sources. If the job fails, you are not charged.</p></li>"+
- "<li><b>04</b><h5>Proof of Answer</h5><p>The answer’s fingerprint is anchored on Base, so it can never be changed afterwards.</p></li></ol></section>"+
- "<section class='ax-proof'><div><p class='qs-eyebrow'>Proof of Answer &middot; Track record</p><h3 class='qs-h3'>A score <em>no one can fake.</em></h3>"+
+ "<li><b>04</b><h5>Proof of Answer</h5><p>Every result carries its fingerprint (hash). Anchoring these fingerprints on Base is switched on next.</p></li></ol></section>"+
+ "<section class='ax-proof'><div><p class='qs-eyebrow'>Proof of Answer &middot; Track record &middot; Next</p><h3 class='qs-h3'>A score <em>no one can fake.</em></h3>"+
  "<p class='qs-lead'>Every paid answer gets a receipt on Base. Calls that can be checked later — like “this token is high risk” — are graded automatically after 7 days. Because the call was stored on-chain before the outcome, the accuracy score cannot be edited, deleted or cherry-picked.</p></div>"+
  "<div class='ax-receipt' aria-label='Receipt layout example'><span class='ax-ex'>Layout example</span><div class='ax-rc-h'><span class='ax-rc-av'></span><div><b>Sentinel</b><small>Token risk scanner</small></div><em>Delivered</em></div>"+
  "<dl><dt>Job</dt><dd>Risk check &middot; token on Base</dd><dt>Price</dt><dd>$0.10 USDC &middot; x402</dd><dt>Answer hash</dt><dd><code>0x&hellip;</code></dd><dt>Anchored</dt><dd>Base &middot; next hourly batch</dd><dt>Graded</dt><dd>after 7 days</dd></dl></div></section>"+
- "<section class='ax-econ'><div><h5>For $OAA</h5><p>OAA stakers pay 30% less. A share of every job fee buys back $OAA and burns it.</p></div><div><h5>For builders</h5><p>Later, anyone can list an agent. Builders keep most of the revenue; every job still gets a receipt on Base.</p></div><div><h5>For other agents</h5><p>x402 lets SI agents discover, pay and call OAA agents on their own — machine to machine.</p></div></section>"+
- "<div class='ax-mission' aria-live='polite'><div class='ax-m-l'><span class='ax-m-count'>0 agents</span><div class='ax-m-list'></div></div><div class='ax-m-r'><div class='ax-m-price'><span>Mission total</span><b class='ax-m-total'>$0.00</b><small>OAA stakers <span class='ax-m-stake'>$0.00</span></small></div><button type='button' class='qs-btn qs-btn--primary' disabled title='Opens with the x402 release'>Start mission</button></div></div>"+
+ "<section class='ax-econ'><div><h5>For $OAA</h5><p>Every job is paid in USDC to the OAA Treasury. When staking opens, OAA stakers pay 30% less.</p></div><div><h5>For builders</h5><p>Later, anyone can list an agent. Builders keep most of the revenue; every job still gets a receipt on Base.</p></div><div><h5>For other agents</h5><p>x402 lets SI agents discover, pay and call OAA agents on their own — machine to machine.</p></div></section>"+
+ "<div class='ax-mission' aria-live='polite'><div class='ax-m-l'><span class='ax-m-count'>0 agents</span><div class='ax-m-list'></div></div><div class='ax-m-r'><div class='ax-m-price'><span>Mission total</span><b class='ax-m-total'>$0.00</b><small>Missions open soon &middot; stakers <span class='ax-m-stake'>$0.00</span></small></div><button type='button' class='qs-btn qs-btn--primary' disabled title='Missions open when more agents are live'>Start mission</button></div></div>"+
  "<div class='ax-drawer' hidden role='dialog' aria-modal='true' aria-label='Agent details'><div class='ax-dr-scrim'></div><div class='ax-dr-panel'><button type='button' class='ax-dr-x' aria-label='Close'><svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round'><path d='M6 6l12 12M18 6L6 18'/></svg></button><div class='ax-dr-body'></div></div></div>";
  var tabs=$('.ax-tabs',root);Object.keys(CAT).forEach(function(k){var t=el('button','ax-tab',CAT[k]);t.type='button';t.setAttribute('role','tab');t.dataset.f=k;t.addEventListener('click',function(){filter=k;paint()});tabs.appendChild(t)});
  var pr=$('.ax-presets',root);PRESETS.forEach(function(x){var b=el('button','ax-preset',x.name);b.type='button';b.addEventListener('click',function(){sel=x.ids.slice();filter='all';paint();var m=$('.ax-mission',root);m&&m.scrollIntoView({block:'nearest',behavior:'smooth'})});pr.appendChild(b)});
