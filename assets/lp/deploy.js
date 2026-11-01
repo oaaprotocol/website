@@ -45,11 +45,20 @@
     if (!build) return S('#s2', 'err', 'The build file is still loading.');
     S('#s2', '', 'Sending the source code to Sourcify…');
     try {
-      var r = await fetch('https://sourcify.dev/server/verify', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ address: addr, chain: '8453', files: build.files }) });
+      var sources = {}; for (var k in build.files) if (k !== 'metadata.json') sources[k] = build.files[k];
+      var r = await fetch('https://sourcify.dev/server/v2/verify/metadata/8453/' + addr, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sources: sources, metadata: JSON.parse(build.files['metadata.json']) }) });
       var j = await r.json();
-      var st = j && j.result && j.result[0] && j.result[0].status;
-      if (st === 'perfect' || st === 'partial') { $('#c2').classList.add('done'); S('#s2', 'ok', 'Verified (' + st + ' match). <a href="https://repo.sourcify.dev/8453/' + addr + '" target="_blank" rel="noopener">Open on Sourcify</a>'); }
-      else throw new Error((j && (j.error || j.message)) || 'Sourcify did not accept the files.');
+      if (!j.verificationId) throw new Error((j && (j.message || j.customCode)) || 'Sourcify did not accept the files.');
+      for (var i = 0; i < 40; i++) {
+        await L.sleep(3000);
+        var st = await fetch('https://sourcify.dev/server/v2/verify/' + j.verificationId).then(function (x) { return x.json(); });
+        if (st.isJobCompleted) {
+          var m = st.contract && st.contract.match;
+          if (m) { $('#c2').classList.add('done'); S('#s2', 'ok', 'Verified (' + m.replace('_', ' ') + '). <a href="https://repo.sourcify.dev/8453/' + addr + '" target="_blank" rel="noopener">Open on Sourcify</a>'); return; }
+          throw new Error((st.error && st.error.message) || 'Sourcify could not match the code.');
+        }
+      }
+      throw new Error('Sourcify is still working. Check again in a few minutes.');
     } catch (e) { S('#s2', 'err', L.esc(e.message || String(e))); }
   };
 
