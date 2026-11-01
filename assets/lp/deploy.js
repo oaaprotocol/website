@@ -5,7 +5,6 @@
   var ARGS = [
     ['_positionManager', '0xe1f8cd9AC4e4A65F54f38a5CdAfCA44f6dD68b53', 'Aerodrome Slipstream position manager'],
     ['_swapRouter', '0x698Cb2b6dd822994581fEa6eA4Fc755d1363A92F', 'Aerodrome Slipstream swap router'],
-    ['_uniV3Factory', '0x33128a8fC17869897dcE68Ed026d694621f6FDfD', 'Uniswap V3 factory (only for the $OAA buyback pool)'],
     ['_weth', '0x4200000000000000000000000000000000000006', 'WETH on Base'],
     ['_ethUsdFeed', '0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70', 'Chainlink ETH / USD'],
     ['_sequencerFeed', '0xBCF85224fc0756B9Fa45aA7892530B47e10b6433', 'Chainlink Base sequencer uptime'],

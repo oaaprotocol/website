@@ -21,12 +21,30 @@ contract OAAToken is ERC20 {
     /// @notice Free-form metadata supplied at launch (JSON: description, image URL, socials).
     string public metadata;
 
-    constructor(string memory name_, string memory symbol_, address creator_, string memory metadata_)
+    constructor(string memory name_, string memory symbol_, address creator_, string memory metadata_, address launchpad_)
         ERC20(string(abi.encodePacked(name_, NAME_SUFFIX)), symbol_)
     {
-        launchpad = msg.sender;
+        launchpad = launchpad_;
         creator = creator_;
         metadata = metadata_;
-        _mint(msg.sender, TOTAL_SUPPLY);
+        _mint(launchpad_, TOTAL_SUPPLY);
+    }
+}
+
+/// @title OAATokenFactory
+/// @notice Deploys OAA tokens for the launchpad (created by the launchpad itself; only it can use this factory).
+contract OAATokenFactory {
+    address public immutable launchpad;
+
+    constructor() {
+        launchpad = msg.sender;
+    }
+
+    function create(bytes32 salt, string calldata name, string calldata symbol, address creator, string calldata metadata)
+        external
+        returns (address token)
+    {
+        require(msg.sender == launchpad, "OTF: only launchpad");
+        token = address(new OAAToken{salt: salt}(name, symbol, creator, metadata, launchpad));
     }
 }
