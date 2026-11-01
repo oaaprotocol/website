@@ -35,7 +35,7 @@
       $('#lpAddr').value = rc.contractAddress;
       try { localStorage.setItem('oaa_lp_addr', rc.contractAddress); } catch (e) {}
       $('#c1').classList.add('done');
-      S('#s1', 'ok', 'Deployed at <a href="https://basescan.org/address/' + rc.contractAddress + '" target="_blank" rel="noopener">' + rc.contractAddress + '</a>. Send this address to the OAA backend setup.');
+      S('#s1', 'ok', 'Deployed at <a href="https://basescan.org/address/' + rc.contractAddress + '" target="_blank" rel="noopener">' + rc.contractAddress + '</a>. Next: click \u201cPause launches\u201d below.');
     } catch (e) { S('#s1', 'err', L.esc(L.errText(e))); }
     finally { btn.disabled = false; }
   };
@@ -52,6 +52,29 @@
       else throw new Error((j && (j.error || j.message)) || 'Sourcify did not accept the files.');
     } catch (e) { S('#s2', 'err', L.esc(e.message || String(e))); }
   };
+
+  async function pState(addr) {
+    var p = BigInt(await L.call(addr, '0x5c975abb')) !== 0n;
+    $('#pState').textContent = p ? 'PAUSED \u2014 nobody can launch' : 'OPEN \u2014 anyone can launch';
+    return p;
+  }
+  async function setPause(on) {
+    var addr = $('#lpAddr').value.trim(); if (!L.isAddr(addr)) return S('#sP', 'err', 'Enter the launchpad address in step 2 first.');
+    try {
+      var a = await L.connect();
+      var owner = L.wordAddr(await L.call(addr, '0x8da5cb5b'), 0);
+      if (owner.toLowerCase() !== a.toLowerCase()) throw new Error('Only the owner (' + owner + ') can do this. If the Safe is the owner, use the Safe app.');
+      S('#sP', '', 'Confirm in your wallet\u2026');
+      var hash = await L.sendTx({ to: addr, data: '0x16c38b3c' + L.encUint(on ? 1 : 0) });
+      var rc = await L.waitReceipt(hash);
+      if (rc.status !== '0x1') throw new Error('The transaction failed on-chain.');
+      await pState(addr);
+      S('#sP', 'ok', on ? 'Launches are paused. The website shows \u201copens with the $OAA launch\u201d.' : 'Launches are open.');
+    } catch (e) { S('#sP', 'err', L.esc(L.errText(e))); }
+  }
+  $('#pauseBtn').onclick = function () { setPause(true); };
+  $('#unpauseBtn').onclick = function () { setPause(false); };
+  $('#pCheck').onclick = function () { var addr = $('#lpAddr').value.trim(); if (L.isAddr(addr)) pState(addr).catch(function (e) { S('#sP', 'err', L.esc(L.errText(e))); }); };
 
   $('#ownBtn').onclick = async function () {
     var addr = $('#lpAddr').value.trim(); if (!L.isAddr(addr)) return S('#s3', 'err', 'Enter the launchpad address in step 2 first.');
