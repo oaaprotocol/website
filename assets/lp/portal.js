@@ -62,11 +62,17 @@
   }
 
   // ---------------------------------------------------------------- KPIs
+  function countTo(el, to, fmt) {
+    var from = +el.dataset.v || 0; el.dataset.v = to;
+    if (from === to) { el.textContent = fmt(to); return; }
+    var t0 = performance.now();
+    (function f(t) { var p = Math.min(1, (t - t0) / 1200), e = 1 - Math.pow(1 - p, 3); el.textContent = fmt(from + (to - from) * e); if (p < 1) requestAnimationFrame(f); })(t0);
+  }
   function kpis() {
     var v = T.reduce(function (a, t) { return a + (t.vol ? t.vol.h24 : 0); }, 0), day = T.filter(function (t) { return Date.now() / 1000 - t.launchedAt < 86400; }).length;
-    $('#kTok').textContent = T.length.toLocaleString('en-US');
+    countTo($('#kTok'), T.length, function (n) { return Math.round(n).toLocaleString('en-US'); });
     $('#kTok2').textContent = day ? '+' + day + ' today' : 'launched on OAA';
-    $('#kVol').textContent = L.fmtUsd(v);
+    countTo($('#kVol'), v, L.fmtUsd);
     $('#kBurn').textContent = (stats && stats.feesWeth ? (stats.feesWeth * 0.4).toFixed(stats.feesWeth * 0.4 >= 1 ? 2 : 4) : '0') + ' ETH';
   }
 
@@ -122,7 +128,7 @@
     $('#cnt').textContent = r.length + ' token' + (r.length === 1 ? '' : 's') + (T.length ? ' · live' : '');
     if (!r.length) {
       tb.innerHTML = ''; em.hidden = false;
-      em.innerHTML = T.length ? '<b>No token matches.</b>Try another category or search.' : '<b>No tokens launched yet.</b>The launchpad opens with the $OAA launch on 17 November 2026. Every token launched on OAA appears here automatically.<br><a class="btn btn-p" href="/launch/">Launch a token</a>';
+      em.innerHTML = T.length ? '<b>No token matches.</b>Try another category or search.' : '<div class="orb"><img src="/assets/lp/oaa-logo.svg" alt=""></div><b>No tokens launched yet.</b>The launchpad opens with the $OAA launch on 17 November 2026. Every token launched on OAA appears here automatically.<br><a class="btn btn-p" href="https://launch.oaap.si/">Launch a token</a>';
       return;
     }
     em.hidden = true;
@@ -172,7 +178,7 @@
     var c = T.filter(function (t) { return t.vol && t.vol.h24 > 0; }).sort(function (a, b) { return b.vol.h24 - a.vol.h24; })[0], info = $('#chInfo');
     if (!c) {
       $('#coinA').textContent = 'OAA';
-      info.innerHTML = '<h2>Most traded<small>updated live from real trading volume</small></h2><p class="ch-empty">The token with the highest 24 h volume on OAA takes this spot. It cannot be bought.</p><div class="ch-acts"><a class="btn btn-p" href="/launch/">Launch a token</a></div>';
+      info.innerHTML = '<h2>Most traded<small>updated live from real trading volume</small></h2><p class="ch-empty">The token with the highest 24 h volume on OAA takes this spot. It cannot be bought.</p><div class="ch-acts"><a class="btn btn-p" href="https://launch.oaap.si/">Launch a token</a></div>';
       return;
     }
     var cc = (CM[c.category] || CATS[1]).c;
@@ -185,8 +191,8 @@
   // ---------------------------------------------------------------- top ads: 3 rotating slots
   var HOUSE = [
     { h: 'Your token here', p: 'Banner ads for tokens launched on OAA. Paid in ETH, clearly marked.', act: 'adv' },
-    { h: 'Launch on OAA', p: '100% liquidity locked forever. You earn 0.4% of every trade.', href: '/launch/' },
-    { h: 'Hire SI Agents', p: 'Sentinel, Guardian, Radar and more. Pay per job in USDC or ETH.', href: '/#agentverse' }
+    { h: 'Launch on OAA', p: '100% liquidity locked forever. You earn 0.4% of every trade.', href: 'https://launch.oaap.si/' },
+    { h: 'Hire SI Agents', p: 'Sentinel, Guardian, Radar and more. Pay per job in USDC or ETH.', href: 'https://oaap.si/#agentverse' }
   ];
   var adTimers = [];
   function ads() {
@@ -288,6 +294,7 @@
   function openTok(t, toBuy) {
     var c = t.chg ? t.chg.h24 : null, g = GR[t.address.toLowerCase()];
     pn.innerHTML = '<button class="x" type="button" aria-label="Close" id="drX">✕</button>' +
+      (t.banner ? '<div class="pbn" style="background-image:url(' + esc(t.banner) + ')"></div>' : '') +
       '<div class="ph">' + avatar(t, 54) + '<div><h2>' + esc(t.name) + '</h2><p>' + esc(t.symbol) + ' · ' + chip(t) + '</p></div></div>' +
       '<div class="price"><b>' + L.fmtPrice(price(t)) + '</b><span class="chg ' + cls(c) + '">' + L.fmtPct(c) + ' 24h</span></div>' +
       (t.description ? '<p style="color:var(--muted);font-size:13.5px;margin:0 0 14px">' + esc(t.description) + '</p>' : '') +

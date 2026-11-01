@@ -87,12 +87,46 @@
   ['#fName', '#fSym', '#fDesc'].forEach(function (s) { $(s).addEventListener('input', preview); });
   $('#fSym').addEventListener('input', function () { var v = this.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 12); if (v !== this.value) this.value = v; });
 
+  // images are cropped in the browser to the exact format (logo 1:1, banner 3:1) and stored as small WEBP files
+  function fitImage(file, w, h) {
+    return new Promise(function (res, rej) {
+      if (!/^image\/(png|jpeg|webp|gif)$/.test(file.type)) return rej(new Error('Use PNG, JPG or WEBP.'));
+      if (file.size > 15 * 1024 * 1024) return rej(new Error('This image is too large (max 15 MB).'));
+      var img = new Image(), u = URL.createObjectURL(file);
+      img.onload = function () {
+        var sw = img.naturalWidth, sh = img.naturalHeight, ar = w / h, cw = sw, ch = sw / ar;
+        if (ch > sh) { ch = sh; cw = sh * ar; }
+        var c = document.createElement('canvas'); c.width = w; c.height = h;
+        var x = c.getContext('2d'); x.imageSmoothingQuality = 'high';
+        x.drawImage(img, (sw - cw) / 2, (sh - ch) / 2, cw, ch, 0, 0, w, h);
+        URL.revokeObjectURL(u);
+        var q = .88;
+        (function enc() {
+          c.toBlob(function (b) {
+            if (!b) return rej(new Error('Could not read this image.'));
+            if (b.size > 290 * 1024 && q > .4) { q -= .12; return enc(); }
+            res(b);
+          }, 'image/webp', q);
+        })();
+      };
+      img.onerror = function () { URL.revokeObjectURL(u); rej(new Error('Could not read this image.')); };
+      img.src = u;
+    });
+  }
+  var bannerFile = null, bannerUrl = null;
   $('#logoIn').onchange = function () {
-    var f = this.files[0]; if (!f) return;
-    if (f.size > 300 * 1024) { toast('The logo must be 300 KB or smaller.'); this.value = ''; return; }
-    if (!/^image\/(png|jpeg|webp|gif)$/.test(f.type)) { toast('Use PNG, JPG, WEBP or GIF.'); this.value = ''; return; }
-    logoFile = f; logoUrl = null;
-    var url = URL.createObjectURL(f); $('#luImg').src = url; $('#luImg').hidden = false; $('#luPh').style.opacity = 0; preview();
+    var f = this.files[0], el = this; if (!f) return;
+    fitImage(f, 512, 512).then(function (b) {
+      logoFile = b; logoUrl = null;
+      $('#luImg').src = URL.createObjectURL(b); $('#luImg').hidden = false; $('#luPh').style.opacity = 0; preview();
+    }).catch(function (e) { toast(e.message); el.value = ''; });
+  };
+  $('#bnIn').onchange = function () {
+    var f = this.files[0], el = this; if (!f) return;
+    fitImage(f, 1500, 500).then(function (b) {
+      bannerFile = b; bannerUrl = null;
+      $('#bnImg').src = URL.createObjectURL(b); $('#bnImg').hidden = false; $('#bnPh').style.opacity = 0;
+    }).catch(function (e) { toast(e.message); el.value = ''; });
   };
 
   // ---------------------------------------------------------------- summary
@@ -116,12 +150,20 @@
   wb.onclick = function () { L.connect().catch(function (e) { if (e.message !== 'cancelled') toast(L.errText(e)); }); };
 
   // ---------------------------------------------------------------- launch
+  async function upload(blob, what) {
+    var r = await L.api('/lp/logo', { method: 'POST', headers: { 'Content-Type': 'image/webp' }, body: blob });
+    if (!r || !r.url) throw new Error((r && r.detail) || 'The ' + what + ' upload failed. Try again, or remove the ' + what + '.');
+    return r.url;
+  }
   async function uploadLogo() {
     if (!logoFile) return null;
-    if (logoUrl) return logoUrl;
-    var r = await L.api('/lp/logo', { method: 'POST', headers: { 'Content-Type': logoFile.type }, body: logoFile });
-    if (!r || !r.url) throw new Error((r && r.detail) || 'The logo upload failed. Try again or launch without a logo.');
-    logoUrl = r.url; return logoUrl;
+    if (!logoUrl) logoUrl = await upload(logoFile, 'logo');
+    return logoUrl;
+  }
+  async function uploadBanner() {
+    if (!bannerFile) return null;
+    if (!bannerUrl) bannerUrl = await upload(bannerFile, 'banner');
+    return bannerUrl;
   }
   $('#launchBtn').onclick = async function () {
     if (busy || !validate(2)) return;
@@ -133,10 +175,11 @@
       if (u && !ethUsd) throw new Error('The ETH price is still loading. Try again in a moment.');
       var bal = await L.balance(acct);
       if (bal < w + 2n * 10n ** 14n) throw new Error('Your wallet needs about ' + L.fromWei(w + 2n * 10n ** 14n, 4) + ' ETH on Base (first buy plus network fee).');
-      stat('', logoFile ? 'Uploading the logo…' : 'Preparing the launch…');
-      var logo = await uploadLogo();
+      stat('', logoFile || bannerFile ? 'Uploading your images…' : 'Preparing the launch…');
+      var logo = await uploadLogo(), banner = await uploadBanner();
       var meta = { v: 1 };
       if (logo) meta.logo = logo;
+      if (banner) meta.banner = banner;
       var d = $('#fDesc').value.trim(); if (d) meta.description = d.slice(0, 400);
       [['website', '#fWeb'], ['x', '#fX'], ['telegram', '#fTg']].forEach(function (p) { var v = $(p[1]).value.trim(); if (v) meta[p[0]] = v; });
       var data = '0x5af55677' + L.encode([{ t: 'string', v: baseName() }, { t: 'string', v: sym() }, { t: 'uint', v: cat }, { t: 'string', v: JSON.stringify(meta) }]);
@@ -161,9 +204,24 @@
   function done(token, hash) {
     $('#okTitle').textContent = (baseName() || 'Your token') + ' by OAA is live.';
     $('#okAddr').textContent = token || '';
-    $('#okPortal').href = '/portal/' + (token ? '#' + token : '');
+    $('#okPortal').href = 'https://portal.oaap.si/' + (token ? '#' + token : '');
     $('#okScan').href = token ? 'https://basescan.org/token/' + token : 'https://basescan.org/tx/' + hash;
     $('#okm').classList.add('on');
+    burst();
+  }
+  // celebration: teal, cyan, blue and white sparks from the centre of the dialog
+  function burst() {
+    if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    var box = $('#okm .mdl-c'), cv = document.createElement('canvas'), x = cv.getContext('2d'), D = Math.min(devicePixelRatio || 1, 2);
+    box.appendChild(cv); var W = box.clientWidth, H = box.clientHeight; cv.width = W * D; cv.height = H * D; x.scale(D, D);
+    var C = ['#7ff3ec', '#33d1c9', '#5ee1ff', '#8fb4ff', '#e9fffd'], P = [];
+    for (var i = 0; i < 140; i++) { var a = Math.random() * Math.PI * 2, v = 2 + Math.random() * 6; P.push({ x: W / 2, y: 90, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 2.5, r: 1.2 + Math.random() * 2.4, c: C[i % C.length], l: 1 }); }
+    var t0 = performance.now();
+    (function f(now) {
+      x.clearRect(0, 0, W, H);
+      P.forEach(function (p) { p.vy += 0.12; p.vx *= 0.985; p.x += p.vx; p.y += p.vy; p.l -= 0.009; if (p.l > 0) { x.globalAlpha = p.l; x.fillStyle = p.c; x.beginPath(); x.arc(p.x, p.y, p.r, 0, 7); x.fill(); } });
+      if (now - t0 < 2400) requestAnimationFrame(f); else cv.remove();
+    })(t0);
   }
   $('#okClose').onclick = function () { $('#okm').classList.remove('on'); };
   $('#okm').onclick = function (e) { if (e.target.id === 'okm') this.classList.remove('on'); };
@@ -175,6 +233,8 @@
   }
   async function init() {
     var c = await L.config();
+    if (c.launchpad) { var cl = $('#clLp'); cl.textContent = L.short(c.launchpad); cl.href = 'https://basescan.org/address/' + c.launchpad; $('#clSrc').href = 'https://repo.sourcify.dev/8453/' + c.launchpad; }
+    else { $('#clLp').textContent = 'live soon'; }
     if (!c.launchpad) { closed('<b>The launchpad opens with the $OAA launch on 17 November 2026.</b> You can prepare your token here already; the launch button turns on when the contract is live.'); syncBtn(); return; }
     try {
       var r = await Promise.all([L.call(c.launchpad, '0x9478ab8c'), L.call(c.launchpad, '0x1064a716'), L.call(c.launchpad, '0x5c975abb')]);

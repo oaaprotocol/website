@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Buy $OAA · OAA Protocol</title>
+<meta name="description" content="Buy $OAA on Base with ETH. Direct swap on Uniswap V4, your wallet confirms.">
+<link rel="icon" href="/assets/favicon-32.png">
+<link rel="stylesheet" href="/assets/lp/lp.css?v=20261102e">
+<link rel="stylesheet" href="/assets/buy/buy.css?v=20261102g">
+<link rel="stylesheet" href="/assets/lp/sia.css?v=20261102e">
+</head>
+<body data-sia-quick="How do I buy $OAA?|What is the $OAA contract address?|What is slippage?|When does trading start?">
+<header class="bt">
+ <a class="bt-brand" href="https://oaap.si/"><img src="/assets/lp/oaa-logo.svg" alt="">OAA<span>PROTOCOL</span></a>
+ <button class="wbtn" id="wBtn" type="button"><span class="dot"></span><span id="wTxt">Connect wallet</span></button>
+</header>
+
+<main class="bm">
+ <div class="duo">
+ <section class="cp" aria-label="$OAA chart and market data">
+  <div class="cp-h"><span class="cp-tk"><img src="/assets/lp/oaa-logo.svg" alt=""><span><b>OAA Protocol</b><small>$OAA · Base</small></span></span><span class="cp-px"><b id="pxNow">—</b><em id="pxChg"></em></span></div>
+  <div class="cp-chart" id="chartBox"><div class="cp-empty" id="chartEmpty"><img src="/assets/lp/oaa-logo.svg" alt=""><b>The chart appears when trading opens</b><span>17 November 2026 · 16:00 (CET)</span></div></div>
+  <div class="cp-st">
+   <div><span>Market cap</span><b id="stMc">—</b></div>
+   <div><span>FDV</span><b id="stFdv">—</b></div>
+   <div><span>Volume 24h</span><b id="stVol">—</b></div>
+   <div><span>Liquidity</span><b id="stLiq">—</b></div>
+   <div><span>Holders</span><b id="stHold">—</b></div>
+   <div><span>Supply</span><b>1,000,000,000</b></div>
+  </div>
+  <div class="cp-l"><a id="lnScan" href="https://basescan.org/token/0x70107c4AA2DC031eF7afc350e03784c2325aBE29" target="_blank" rel="noopener">BaseScan</a><a id="lnDex" href="https://dexscreener.com/base/0x70107c4AA2DC031eF7afc350e03784c2325aBE29" target="_blank" rel="noopener">DexScreener</a><a href="https://oaap.si/" target="_blank" rel="noopener">oaap.si</a></div>
+ </section>
+ <section class="sw" aria-label="Swap">
+  <div class="sw-h">
+   <h1>Buy $OAA</h1>
+   <button class="sw-gear" id="gearBtn" type="button" aria-label="Settings" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1.1-1.5 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1.1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"/></svg></button>
+  </div>
+
+  <div class="set" id="set" hidden>
+   <div class="set-r"><span>Max. slippage</span><div class="seg" id="slipSeg"><button type="button" data-v="auto" aria-pressed="true">Auto</button><button type="button" data-v="0.5">0.5%</button><button type="button" data-v="1">1%</button><button type="button" data-v="3">3%</button><label class="cust"><input id="slipIn" inputmode="decimal" placeholder="Custom" aria-label="Custom slippage in percent"><i>%</i></label></div></div>
+   <p class="set-h" id="slipHint">Auto: 1%. The swap is cancelled if the price moves more than this before it is confirmed.</p>
+   <div class="set-r"><span>Transaction speed</span><div class="seg" id="spdSeg"><button type="button" data-v="std" aria-pressed="true">Standard</button><button type="button" data-v="fast">Fast</button><button type="button" data-v="instant">Instant</button></div></div>
+   <p class="set-h" id="spdHint">Standard: your wallet sets the network fee. On Base a swap usually confirms within a few seconds.</p>
+  </div>
+
+  <div class="box" id="payBox">
+   <div class="box-t"><span>You pay</span><button type="button" class="bal" id="balBtn" title="Use max">Balance: <b id="balEth">—</b></button></div>
+   <div class="box-r"><input id="inEth" inputmode="decimal" placeholder="0" autocomplete="off" aria-label="Amount of ETH"><span class="tk"><img src="/assets/lp/coins/ethereum.webp" alt="">ETH<em>Base</em></span></div>
+   <div class="box-b"><span id="inUsd">$0</span><div class="qa"><button type="button" data-p="25">25%</button><button type="button" data-p="50">50%</button><button type="button" data-p="max">Max</button></div></div>
+  </div>
+  <div class="mid" aria-hidden="true"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M6 13l6 6 6-6"/></svg></span></div>
+  <div class="box rcv">
+   <div class="box-t"><span>You receive</span><span class="ca"><a id="caLink" href="https://basescan.org/token/0x70107c4AA2DC031eF7afc350e03784c2325aBE29" target="_blank" rel="noopener">0x7010…BE29</a><button type="button" id="caCopy" aria-label="Copy contract address">Copy</button></span></div>
+   <div class="box-r"><output id="outOaa">0</output><span class="tk"><img src="/assets/lp/oaa-logo.svg" alt="">OAA<em>Base</em></span></div>
+   <div class="box-b"><span id="outUsd">—</span><span id="impact"></span></div>
+  </div>
+
+  <div class="det" id="det" hidden>
+   <div><span>Rate</span><b id="dRate">—</b></div>
+   <div><span>Minimum received</span><b id="dMin">—</b></div>
+   <div><span>Max. slippage</span><b id="dSlip">1%</b></div>
+   <div><span>Network fee</span><b id="dGas">—</b></div>
+   <div><span>Route</span><b>Uniswap V4 · Base</b></div>
+  </div>
+
+  <button class="go" id="goBtn" type="button">Connect wallet</button>
+  <div class="st-line" id="sStat" role="status" aria-live="polite"><i></i><span id="sStatT"></span></div>
+  <div class="done" id="doneBox" hidden><button class="btn" type="button" id="addTok">Add $OAA to wallet</button><a class="btn" id="txLink" href="#" target="_blank" rel="noopener">View on BaseScan</a></div>
+ </section>
+ </div>
+ <p class="foot">Swaps run on Uniswap V4 on Base, straight from your wallet. OAA never holds your funds. Not financial advice.</p>
+</main>
+<script src="/assets/lp/lp.js?v=20261102e"></script>
+<script src="/assets/buy/abi.js?v=20261102e"></script>
+<script src="/assets/buy/buy.js?v=20261102e"></script><script src="/assets/buy/market.js?v=20261102e"></script>
+<script src="/assets/lp/sia.js?v=20261102e"></script>
+</body>
+</html>

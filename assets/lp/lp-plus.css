@@ -1,0 +1,78 @@
+/* OAA Launchpad + Portal: extra sections and effects (shared) */
+.xs{margin:34px 0}
+.xs-h{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:16px;flex-wrap:wrap}
+.xs-h h2{font:400 clamp(20px,2.2vw,26px)/1.25 var(--display,Michroma,Arial);margin:8px 0 0;letter-spacing:.01em}
+.xs-h p{margin:6px 0 0;color:var(--muted,rgba(233,240,243,.62));font-size:14px;max-width:560px}
+
+/* how it works */
+.hw{position:relative;display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.hw::before{content:'';position:absolute;left:6%;right:6%;top:34px;height:1px;background:linear-gradient(90deg,transparent,rgba(127,243,236,.45),transparent);background-size:200% 100%;animation:hwline 6s linear infinite;z-index:0}
+@keyframes hwline{from{background-position:200% 0}to{background-position:-200% 0}}
+.hw-s{position:relative;z-index:1;padding:18px 16px 16px;border-radius:18px;border:1px solid var(--line,rgba(255,255,255,.08));background:linear-gradient(180deg,rgba(18,28,30,.85),rgba(8,13,14,.9));transition:transform .35s var(--ease,ease),border-color .35s}
+.hw-s:hover{transform:translateY(-4px);border-color:rgba(127,243,236,.35)}
+.hw-n{width:36px;height:36px;border-radius:12px;display:grid;place-items:center;font:400 13px var(--display,Michroma,Arial);color:#03201f;background:linear-gradient(135deg,#7ff3ec,#33d1c9);box-shadow:0 0 0 5px rgba(51,209,201,.08),0 8px 24px rgba(51,209,201,.3);margin-bottom:14px}
+.hw-s b{display:block;font:600 15px/1.3 var(--body,Inter,Arial);margin-bottom:6px;color:var(--text,#eef2f3)}
+.hw-s p{margin:0;color:var(--muted,rgba(233,240,243,.62));font-size:13px;line-height:1.5}
+
+/* trust strip */
+.tr{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.tr a,.tr div{display:flex;gap:12px;align-items:center;padding:14px;border-radius:16px;border:1px solid var(--line,rgba(255,255,255,.08));background:rgba(255,255,255,.025);color:inherit;text-decoration:none;transition:border-color .25s,background .25s}
+.tr a:hover{border-color:rgba(127,243,236,.4);background:rgba(51,209,201,.06)}
+.tr svg{flex:0 0 22px;width:22px;height:22px;color:var(--acc2,#7ff3ec)}
+.tr b{display:block;font:600 13px var(--body,Inter,Arial)}
+.tr small{display:block;color:var(--faint,rgba(233,240,243,.38));font-size:11.5px;margin-top:2px;overflow-wrap:anywhere}
+
+/* FAQ */
+.faq{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.faq details{border-radius:16px;border:1px solid var(--line,rgba(255,255,255,.08));background:rgba(255,255,255,.025);transition:border-color .25s,background .25s}
+.faq details[open]{border-color:rgba(127,243,236,.3);background:rgba(51,209,201,.045)}
+.faq summary{list-style:none;cursor:pointer;padding:15px 44px 15px 16px;position:relative;font:600 14px/1.4 var(--body,Inter,Arial)}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary::after{content:'';position:absolute;right:18px;top:50%;width:9px;height:9px;border-right:2px solid var(--acc2,#7ff3ec);border-bottom:2px solid var(--acc2,#7ff3ec);transform:translateY(-70%) rotate(45deg);transition:transform .3s}
+.faq details[open] summary::after{transform:translateY(-30%) rotate(-135deg)}
+.faq details p{margin:0;padding:0 16px 16px;color:var(--muted,rgba(233,240,243,.62));font-size:13.5px;line-height:1.6}
+
+/* earnings calculator */
+.calc{display:grid;grid-template-columns:1.1fr .9fr;gap:18px;align-items:center;padding:22px;border-radius:22px;border:1px solid rgba(127,243,236,.2);background:radial-gradient(600px 200px at 0 0,rgba(51,209,201,.1),transparent 70%),rgba(10,16,17,.85)}
+.calc label{display:block;font:700 10.5px var(--body,Inter,Arial);letter-spacing:.14em;text-transform:uppercase;color:var(--faint,rgba(233,240,243,.38));margin-bottom:10px}
+.calc input[type=range]{width:100%;accent-color:#33d1c9}
+.calc .cv{font:400 22px var(--display,Michroma,Arial);margin:8px 0 2px}
+.calc .co{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.calc .co div{padding:12px;border-radius:14px;background:rgba(255,255,255,.04);border:1px solid var(--line,rgba(255,255,255,.08))}
+.calc .co span{display:block;font-size:11px;color:var(--faint,rgba(233,240,243,.38));text-transform:uppercase;letter-spacing:.1em}
+.calc .co b{display:block;font:400 17px var(--display,Michroma,Arial);margin-top:6px;color:#bff7f3}
+.calc small{display:block;color:var(--faint,rgba(233,240,243,.38));font-size:11.5px;margin-top:10px}
+
+/* table row entry + shimmer on boosted rows */
+#tb tr.r{animation:rowin .5s var(--ease,ease) both}
+#tb tr.r:nth-child(2){animation-delay:.03s}#tb tr.r:nth-child(3){animation-delay:.06s}#tb tr.r:nth-child(4){animation-delay:.09s}#tb tr.r:nth-child(5){animation-delay:.12s}#tb tr.r:nth-child(n+6){animation-delay:.15s}
+@keyframes rowin{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+#tb tr.bst{background:linear-gradient(90deg,rgba(255,122,89,.06),transparent 40%)}
+.rbuy{transition:transform .2s,box-shadow .2s}.rbuy:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(51,209,201,.35)}
+
+/* empty state */
+.empty{position:relative;overflow:hidden}
+.empty::before{content:'';position:absolute;left:50%;top:-60px;width:420px;height:220px;transform:translateX(-50%);background:radial-gradient(closest-side,rgba(51,209,201,.16),transparent);pointer-events:none}
+.empty .orb{width:64px;height:64px;margin:0 auto 14px;border-radius:20px;display:grid;place-items:center;background:linear-gradient(135deg,rgba(127,243,236,.18),rgba(51,209,201,.05));border:1px solid rgba(127,243,236,.3);animation:orb 4s ease-in-out infinite}
+.empty .orb img{width:38px;height:38px}
+@keyframes orb{50%{transform:translateY(-5px);box-shadow:0 14px 40px rgba(51,209,201,.25)}}
+
+/* launch page: step transitions, contract line, info below the window */
+.st.on{animation:stin .45s var(--ease,ease) both}
+@keyframes stin{from{opacity:0;transform:translateX(14px)}to{opacity:1;transform:none}}
+.stepbar i{box-shadow:0 0 14px rgba(127,243,236,.7)}
+.cline{display:flex;flex-wrap:wrap;justify-content:center;gap:6px 16px;margin-top:18px;padding-top:14px;border-top:1px solid rgba(255,255,255,.06);font-size:11.5px;color:var(--faint,rgba(233,240,243,.38))}
+.cline a{color:var(--muted,rgba(233,240,243,.62));text-decoration:none;border-bottom:1px dotted rgba(127,243,236,.4)}
+.cline a:hover{color:#bff7f3}
+.cline i{display:inline-block;width:6px;height:6px;border-radius:50%;background:#33d1c9;box-shadow:0 0 8px #33d1c9;margin-right:6px;vertical-align:middle}
+.below{position:relative;z-index:3;width:min(980px,calc(100% - 32px));margin:0 auto;padding:10px 0 80px}
+.below .xs-h h2{color:#eef2f3}
+#okm canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+#okm .mdl-c{position:relative;overflow:hidden}
+
+@media (max-width:1100px){.hw,.tr{grid-template-columns:1fr 1fr}.hw::before{display:none}}
+@media (max-width:760px){.hw,.tr,.faq,.calc{grid-template-columns:1fr}.calc .co{grid-template-columns:1fr 1fr 1fr}.calc .co b{font-size:14px}.xs{margin:26px 0}}
+@media (prefers-reduced-motion:reduce){.hw::before,.empty .orb,#tb tr.r,.st.on{animation:none}}
+
+/* token banner in the Portal drawer (3:1) */
+.pbn{aspect-ratio:3/1;width:100%;border-radius:16px;background-size:cover;background-position:center;border:1px solid var(--line,rgba(255,255,255,.08));margin:0 0 14px}
