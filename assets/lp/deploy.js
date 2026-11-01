@@ -16,7 +16,7 @@
   var wb = $('#wBtn');
   L.onAccount(function (a) { wb.classList.toggle('on', !!a); $('#wTxt').textContent = a ? L.short(a) : 'Connect wallet'; });
   wb.onclick = function () { L.connect().catch(function () {}); };
-  fetch('/assets/lp/launchpad-build.json').then(function (r) { return r.json(); }).then(function (b) { build = b; $('#solc').textContent = 'solc ' + b.compiler; });
+  fetch('/assets/lp/launchpad-build.json?v=20261101b').then(function (r) { return r.json(); }).then(function (b) { build = b; $('#solc').textContent = 'solc ' + b.compiler; });
   try { var saved = localStorage.getItem('oaa_lp_addr'); if (saved) $('#lpAddr').value = saved; } catch (e) {}
 
   $('#deployBtn').onclick = async function () {
