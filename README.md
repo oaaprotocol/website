@@ -30,6 +30,15 @@ SI agents you can hire per job on the website (Agentverse):
 - Every result includes an answer hash.
 - Results are automatic checks of public on-chain data. They are not an audit and not financial advice.
 
+## Launchpad and Portal
+
+- `/launch/` – launch a token on Base: 1,000,000,000 supply, 100% of the liquidity locked forever in the launchpad contract as three Aerodrome Slipstream positions (50% / 30% / 20%, from a $30k up to a $1B market cap, 1% fee tier). Every token's on-chain name carries the tag "by OAA" (e.g. "Velvet Cat by OAA"), so wallets, BaseScan, DexScreener and the Portal show where it was launched. Optional first buy in the same transaction, max $500 in ETH (Chainlink price).
+- Every trade pays 1%: 0.4% to the creator, 0.4% to the OAA Treasury, 0.2% buys and burns $OAA.
+- `/portal/` – all tokens launched on OAA with price, volume, market cap and a Sentinel risk grade, by category. Buy button swaps ETH on Aerodrome with the visitor's own wallet. Paid placements (boosts, banners) are paid in ETH to the Treasury Safe and are always marked.
+- Data: the launchpad contract on Base (read through the Sia worker at `sia.oaaprotocol.workers.dev/lp/*`) and DexScreener for volume.
+- Contract sources: `contracts/OAALaunchpad.sol`, `contracts/OAAToken.sol` (solc 0.7.6, optimizer 200 runs), verified on Sourcify after deployment.
+- `/deploy-launchpad/` – internal page (noindex) used once to deploy the contract with a wallet.
+
 ## Deployment
 
-Static site, no build step. Netlify deploys this repository automatically (`netlify.toml`, publish directory `.`).
+Static site, no build step. Netlify deploys this repository automatically (`netlify.toml`, publish directory `.`). The Content-Security-Policy in `netlify.toml` also allows `api.dexscreener.com`, `sourcify.dev` (connect) and `dexscreener.com` (chart frame) for the Portal.
