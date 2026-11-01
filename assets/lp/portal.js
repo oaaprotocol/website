@@ -122,7 +122,7 @@
     $('#cnt').textContent = r.length + ' token' + (r.length === 1 ? '' : 's') + (T.length ? ' · live' : '');
     if (!r.length) {
       tb.innerHTML = ''; em.hidden = false;
-      em.innerHTML = T.length ? '<b>No token matches.</b>Try another category or search.' : '<b>No tokens launched yet.</b>The launchpad opens with the $OAA launch on 25 November 2026. Every token launched on OAA appears here automatically.<br><a class="btn btn-p" href="/launch/">Launch a token</a>';
+      em.innerHTML = T.length ? '<b>No token matches.</b>Try another category or search.' : '<b>No tokens launched yet.</b>The launchpad opens with the $OAA launch on 17 November 2026. Every token launched on OAA appears here automatically.<br><a class="btn btn-p" href="/launch/">Launch a token</a>';
       return;
     }
     em.hidden = true;
@@ -162,7 +162,7 @@
   // ---------------------------------------------------------------- ticker
   function ticker() {
     var list = T.slice().sort(function (a, b) { return vol(b) - vol(a); }).slice(0, 16), el = $('#tick');
-    if (!list.length) { el.innerHTML = '<span><b>OAA Portal</b>Every launch with 100% locked liquidity</span><span><b>Base</b>live</span><span><b>Launchpad</b>opens 25 Nov 2026</span>'; el.innerHTML += el.innerHTML; return; }
+    if (!list.length) { el.innerHTML = '<span><b>OAA Portal</b>Every launch with 100% locked liquidity</span><span><b>Base</b>live</span><span><b>Launchpad</b>opens 17 Nov 2026</span>'; el.innerHTML += el.innerHTML; return; }
     var h = list.map(function (t) { var c = t.chg ? t.chg.h24 : null; return '<span>' + avatar(t, 18) + '<b>' + esc(t.symbol) + '</b>' + L.fmtPrice(price(t)) + ' <em class="chg ' + cls(c) + '" style="font-style:normal">' + L.fmtPct(c) + '</em></span>'; }).join('');
     el.innerHTML = h + h;
   }

@@ -175,12 +175,12 @@
   }
   async function init() {
     var c = await L.config();
-    if (!c.launchpad) { closed('<b>The launchpad opens with the $OAA launch on 25 November 2026.</b> You can prepare your token here already; the launch button turns on when the contract is live.'); syncBtn(); return; }
+    if (!c.launchpad) { closed('<b>The launchpad opens with the $OAA launch on 17 November 2026.</b> You can prepare your token here already; the launch button turns on when the contract is live.'); syncBtn(); return; }
     try {
       var r = await Promise.all([L.call(c.launchpad, '0x9478ab8c'), L.call(c.launchpad, '0x1064a716'), L.call(c.launchpad, '0x5c975abb')]);
       ethUsd = Number(BigInt(r[0])) / 1e8; maxWei = BigInt(r[1]); paused = BigInt(r[2]) !== 0n;
       lpReady = true;
-      if (paused) closed('<b>The launchpad opens with the $OAA launch on 25 November 2026.</b> You can prepare your token here already; the launch button turns on when launches open.');
+      if (paused) closed('<b>The launchpad opens with the $OAA launch on 17 November 2026.</b> You can prepare your token here already; the launch button turns on when launches open.');
     } catch (e) { closed('<b>The Base network is not answering right now.</b> Reload the page in a moment.'); }
     buyUi(); syncBtn();
   }
