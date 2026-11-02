@@ -8,7 +8,8 @@
   var REPO = 'oaaprotocol/website', API = 'https://api.github.com/repos/' + REPO, SINCE = '2026-10-28T00:00:00Z';
   var MAX_DAYS = 12, LIST_TTL = 10 * 60 * 1000, KEY = 'oaa-gh1-';
   var TAGS = ['Agents', 'Launchpad', 'Token', 'Risk', 'Code', 'Website'];
-  var DEFAULT_MSG = /^(add|update|delete|create|upload)\s+files?\s+via\s+upload|^(add|update|create|delete)\s+[\w.\/-]+$|^merge\b|^initial commit/i;
+  var DEFAULT_MSG = /^(add|update|delete|create|upload)\s+files?\s+via\s+upload|^(add|update|create)\s+[\w.\/-]+$|^delete\b|^revert\b|^merge\b|^initial commit/i;
+  var MSG_TAG = [[/\b(agent|agents|sia|sentinel|guardian|radar|whale|decoder|tally|pulse|scribe|x402|mission)/i, 'Agents'], [/\b(launchpad|launch|portal|creator|buyback)/i, 'Launchpad'], [/\$?OAA token|tokenomics|lock|vesting|buy \$?OAA/i, 'Token'], [/\b(risk|rug|honeypot)/i, 'Risk']];
   var AREAS = [
     [/^contracts\//, 'Smart contracts', 'Launchpad'],
     [/^deploy-launchpad\/|assets\/lp\/(deploy\.js|launchpad-build)/, 'Launchpad deploy', 'Launchpad'],
@@ -126,7 +127,8 @@
     if (major.length) areas = major.concat(areas.filter(function (a) { return MINOR[a]; }));
     var tags = Object.keys(w).sort(function (a, b) { return w[b] - w[a]; });
     var tag = tags.filter(function (t) { return t !== 'Website'; })[0] || 'Website';
-    var msg = fromMessages(g), u = { tag: (msg && msg.tag) || tag, img: r.images, code: r.code, files: r.files.length };
+    var msg = fromMessages(g), mt = msg && !msg.tag && MSG_TAG.filter(function (x) { return x[0].test(msg.title); })[0];
+    var u = { tag: (msg && msg.tag) || (mt && mt[1]) || tag, img: r.images, code: r.code, files: r.files.length };
     var list = function (a) { return a.length < 2 ? a.join('') : a.slice(0, -1).join(', ') + ' and ' + a[a.length - 1]; };
     if (msg) {
       u.title = msg.title;
