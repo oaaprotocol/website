@@ -19,7 +19,7 @@
     [/sia\.(js|css)|assets\/sia/i, 'Sia assistant', 'Agents'],
     [/agent|x402|exchange|mission/i, 'Agent Exchange', 'Agents'],
     [/sentinel|guardian|rug/i, 'Risk checks', 'Risk'],
-    [/assets\/lp\//, 'Launchpad and Portal', 'Launchpad'],
+    [/assets\/lp\//, 'Launchpad scripts', 'Launchpad'],
     [/^netlify\.toml$/, 'Security headers', 'Website'],
     [/^readme/i, 'Project README', 'Website'],
     [/locks\.json|tokenomics/i, 'Tokenomics', 'Token'],
