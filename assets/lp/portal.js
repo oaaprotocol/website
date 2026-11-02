@@ -73,6 +73,7 @@
     countTo($('#kTok'), T.length, function (n) { return Math.round(n).toLocaleString('en-US'); });
     $('#kTok2').textContent = day ? '+' + day + ' today' : 'launched on OAA';
     countTo($('#kVol'), v, L.fmtUsd);
+    var ob = $('#kOaa'); if (ob) countTo(ob, stats && stats.oaaBurned ? stats.oaaBurned : 0, function (n) { n = Math.round(n); return n >= 1e6 ? (n / 1e6).toFixed(2) + 'M' : n.toLocaleString('en-US'); });
     $('#kBurn').textContent = (stats && stats.feesWeth ? (stats.feesWeth * 0.4).toFixed(stats.feesWeth * 0.4 >= 1 ? 2 : 4) : '0') + ' ETH';
   }
 
@@ -309,8 +310,8 @@
       '<li><i></i><div><b>Launched on OAA \u00b7 name tag \u201cby OAA\u201d</b><br><small style="color:var(--muted)">Created by the OAA launchpad contract. The tag is part of the on-chain name.</small></div></li>' +
       '<li><i></i><div><b>Fixed supply, no mint, no token tax</b><br><small style="color:var(--muted)">1,000,000,000 tokens. The creator could buy first, max $500.</small></div></li>' +
       '<li><i></i><div><b>Sentinel grade ' + (g ? '<span class="g g' + g.grade + '">' + g.grade + '</span>' : 'pending') + '</b><br><small style="color:var(--muted)">Automatic check of public on-chain data. Not an audit, not financial advice.</small></div></li></ul>' +
-      '<p class="sec">Where the 1% trading fee goes</p><div class="split"><i style="width:40%;background:#7ff3ec"></i><i style="width:60%;background:#33d1c9"></i></div><div class="lg"><span>0.4% creator</span><span>0.6% OAA Treasury</span></div>' +
-      '<div class="acts" style="flex-wrap:wrap">' + link('https://basescan.org/token/' + t.address, 'BaseScan') + link('https://dexscreener.com/base/' + t.pool, 'DexScreener') + link('https://aerodrome.finance/swap?from=' + t.address + '&to=eth', 'Sell on Aerodrome') + link(t.website, 'Website') + link(t.x, 'X') + link(t.telegram, 'Telegram') + '<button class="btn" type="button" id="advThis">Advertise</button><button class="btn" type="button" id="colThis" title="Pays out the collected trading fees: 0.4% to the creator, 0.6% to the OAA Treasury">Collect fees</button></div><div class="st-line" id="colStat"><i></i><span id="colStatT"></span></div>' +
+      '<p class="sec">Where the 1% trading fee goes</p><div class="split"><i style="width:40%;background:#7ff3ec"></i><i style="width:30%;background:#33d1c9"></i><i style="width:30%;background:#1b7f9e"></i></div><div class="lg"><span>0.4% creator</span><span>0.3% OAA Treasury</span><span>0.3% buys &amp; burns $OAA</span></div>' +
+      '<div class="acts" style="flex-wrap:wrap">' + link('https://basescan.org/token/' + t.address, 'BaseScan') + link('https://dexscreener.com/base/' + t.pool, 'DexScreener') + link('https://aerodrome.finance/swap?from=' + t.address + '&to=eth', 'Sell on Aerodrome') + link(t.website, 'Website') + link(t.x, 'X') + link(t.telegram, 'Telegram') + '<button class="btn" type="button" id="advThis">Advertise</button><button class="btn" type="button" id="colThis" title="Pays out the collected trading fees: 0.4% to the creator, 0.3% to the OAA Treasury, 0.3% buys and burns $OAA">Collect fees</button></div><div class="st-line" id="colStat"><i></i><span id="colStatT"></span></div>' +
       '<p style="color:var(--faint);font-size:11.5px;margin-top:14px;word-break:break-all">Contract ' + esc(t.address) + '<br>Creator ' + esc(t.creator) + '</p>';
     dr.classList.add('on');
     $('#drX').onclick = closeDr;

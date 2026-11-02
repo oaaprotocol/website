@@ -5,6 +5,7 @@
   var ARGS = [
     ['_positionManager', '0xe1f8cd9AC4e4A65F54f38a5CdAfCA44f6dD68b53', 'Aerodrome Slipstream position manager'],
     ['_swapRouter', '0x698Cb2b6dd822994581fEa6eA4Fc755d1363A92F', 'Aerodrome Slipstream swap router'],
+    ['_v4PoolManager', '0x498581fF718922c3f8e6A244956aF099B2652b2b', 'Uniswap V4 PoolManager (only for the $OAA buyback)'],
     ['_weth', '0x4200000000000000000000000000000000000006', 'WETH on Base'],
     ['_ethUsdFeed', '0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70', 'Chainlink ETH / USD'],
     ['_sequencerFeed', '0xBCF85224fc0756B9Fa45aA7892530B47e10b6433', 'Chainlink Base sequencer uptime'],
@@ -16,7 +17,7 @@
   var wb = $('#wBtn');
   L.onAccount(function (a) { wb.classList.toggle('on', !!a); $('#wTxt').textContent = a ? L.short(a) : 'Connect wallet'; });
   wb.onclick = function () { L.connect().catch(function () {}); };
-  fetch('/assets/lp/launchpad-build.json?v=20261101b').then(function (r) { return r.json(); }).then(function (b) { build = b; $('#solc').textContent = 'solc ' + b.compiler; });
+  fetch('/assets/lp/launchpad-build.json?v=20261102k').then(function (r) { return r.json(); }).then(function (b) { build = b; $('#solc').textContent = 'solc ' + b.compiler; });
   try { var saved = localStorage.getItem('oaa_lp_addr'); if (saved) $('#lpAddr').value = saved; } catch (e) {}
 
   $('#deployBtn').onclick = async function () {
@@ -98,5 +99,29 @@
       $('#c3').classList.add('done');
       S('#s3', 'ok', 'Started. Now open the Safe app and call acceptOwnership() on ' + addr + ' from the Treasury Safe.');
     } catch (e) { S('#s3', 'err', L.esc(L.errText(e))); }
+  };
+
+  // $OAA buyback pool (Uniswap V4, hooks = 0, paired with native ETH or WETH). Owner only, before the hand-over to the Safe.
+  async function bbState(addr) {
+    var v4 = BigInt(await L.call(addr, '0x422242f2')) !== 0n, pool = L.wordAddr(await L.call(addr, '0x47446570'), 0);
+    var res = BigInt(await L.call(addr, '0xff909560')), burned = BigInt(await L.call(addr, '0xc4eecf8e'));
+    $('#bState').textContent = (/^0x0{40}$/i.test(pool) ? 'not set yet' : (v4 ? 'Uniswap V4 set' : 'Aerodrome set')) + ' · waiting ' + (Number(res) / 1e18).toFixed(6) + ' ETH · burned ' + Math.round(Number(burned) / 1e18).toLocaleString('en-US') + ' OAA';
+  }
+  $('#bCheck').onclick = function () { var addr = $('#lpAddr').value.trim(); if (L.isAddr(addr)) bbState(addr).catch(function (e) { S('#sB', 'err', L.esc(L.errText(e))); }); };
+  $('#bSet').onclick = async function () {
+    var addr = $('#lpAddr').value.trim(); if (!L.isAddr(addr)) return S('#sB', 'err', 'Enter the launchpad address in step 2 first.');
+    var pair = $('#bPair').value, fee = parseInt($('#bFee').value, 10), ts = parseInt($('#bTs').value, 10);
+    if (!(fee >= 0 && fee < 1000000) || !(ts > 0 && ts < 32768)) return S('#sB', 'err', 'Enter the fee (e.g. 10000 = 1%) and the tick spacing of the $OAA pool.');
+    try {
+      var a = await L.connect();
+      var owner = L.wordAddr(await L.call(addr, '0x8da5cb5b'), 0);
+      if (owner.toLowerCase() !== a.toLowerCase()) throw new Error('Only the owner (' + owner + ') can do this. If the Safe is the owner, use the Safe app.');
+      S('#sB', '', 'Confirm in your wallet…');
+      var hash = await L.sendTx({ to: addr, data: '0xb821d505' + L.encAddr('0x70107c4AA2DC031eF7afc350e03784c2325aBE29') + L.encAddr(pair) + L.encUint(fee) + L.encUint(ts) });
+      var rc = await L.waitReceipt(hash);
+      if (rc.status !== '0x1') throw new Error('The transaction failed on-chain (pool not found? check fee, tick spacing and that hooks = none).');
+      $('#cB').classList.add('done'); await bbState(addr);
+      S('#sB', 'ok', 'Buyback pool set. From now on 0.3% of every buy on the launchpad buys $OAA and burns it.');
+    } catch (e) { S('#sB', 'err', L.esc(L.errText(e))); }
   };
 })();

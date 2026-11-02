@@ -19,7 +19,7 @@
   var faq = [
     ['Can anyone remove the liquidity?', 'No. The three Aerodrome positions are held by the launchpad contract and it has no function to withdraw them. Not the creator, not OAA, nobody.'],
     ['What does it cost to launch?', 'Only the Base network fee (a few cents) and your optional first buy. There is no launch fee.'],
-    ['How do creators earn?', 'Every buy and sell pays a 1% pool fee. 0.4% of the volume goes to the creator, 0.6% to the OAA Treasury. Anyone can press “Collect fees” in the Portal to pay them out.'],
+    ['How do creators earn?', 'Every buy and sell pays a 1% pool fee. 0.4% of the volume goes to the creator. Of the rest, 0.3% goes to the OAA Treasury and 0.3% automatically buys $OAA on Uniswap and burns it forever (on sells, where the fee is paid in the token, the 0.6% goes to the Treasury). Anyone can press “Collect fees” in the Portal to pay everything out.'],
     ['Why “by OAA” in the name?', 'It is part of the token’s on-chain name, so wallets, BaseScan, DexScreener and the Portal all show that it was launched on OAA.'],
     ['Is there a tax, mint or owner in the token?', 'No. Fixed supply of 1,000,000,000, 18 decimals, no owner, no mint function and no transfer tax.'],
     ['Where does the price start?', 'At a $30,000 market cap. The liquidity sits in three ranges: 50% up to $1M, 30% up to $50M and 20% up to $1B.'],
