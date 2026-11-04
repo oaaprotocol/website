@@ -175,17 +175,22 @@
   }
 
   // ---------------------------------------------------------------- champion (most traded, cannot be bought)
+  function orbSet(c) {
+    var tok = $('#orbTok'), img = $('#orbImg'), sym = $('#orbSym'); if (!tok) return;
+    var logo = c ? c.logo : '/assets/lp/oaa-logo.svg';
+    sym.textContent = c ? c.symbol.slice(0, 5) : 'OAA';
+    if (logo) { img.onerror = function () { tok.classList.add('txt'); }; tok.classList.remove('txt'); if (img.getAttribute('src') !== logo) img.src = logo; } else tok.classList.add('txt');
+  }
   function champ() {
     var c = T.filter(function (t) { return t.vol && t.vol.h24 > 0; }).sort(function (a, b) { return b.vol.h24 - a.vol.h24; })[0], info = $('#chInfo');
     if (!c) {
-      $('#coinA').textContent = 'OAA';
+      orbSet(null);
       info.innerHTML = '<h2>Most traded<small>updated live from real trading volume</small></h2><p class="ch-empty">The token with the highest 24 h volume on OAA takes this spot. It cannot be bought.</p><div class="ch-acts"><a class="btn btn-p" href="https://launch.oaap.si/">Launch a token</a></div>';
       return;
     }
-    var cc = (CM[c.category] || CATS[1]).c;
-    $('#coin').style.setProperty('--cc', cc); $('#coinA').textContent = c.symbol.slice(0, 4);
-    info.innerHTML = '<div style="display:flex;align-items:center;gap:10px">' + avatar(c, 40) + chip(c) + '</div><h2>' + esc(c.name) + '<small>' + esc(c.symbol) + ' · ' + L.fmtPrice(price(c)) + ' <span class="chg ' + cls(c.chg && c.chg.h24) + '">' + L.fmtPct(c.chg && c.chg.h24) + '</span></small></h2>' +
-      '<div class="ch-num"><div><span>Volume 24h</span><b>' + L.fmtUsd(c.vol.h24) + '</b></div><div><span>Market cap</span><b>' + L.fmtUsd(mc(c)) + '</b></div><div><span>Txns 24h</span><b>' + (c.txns || 0).toLocaleString('en-US') + '</b></div><div><span>Sentinel</span><b>' + gradeHtml(c) + '</b></div></div>' +
+    orbSet(c);
+    info.innerHTML = '<div style="display:flex;align-items:center;gap:10px">' + avatar(c, 40) + chip(c) + '</div><h2>' + esc(c.name) + '<small><b class="ch-tk">$' + esc(c.symbol) + '</b> · ' + L.fmtPrice(price(c)) + ' <span class="chg ' + cls(c.chg && c.chg.h24) + '">' + L.fmtPct(c.chg && c.chg.h24) + '</span></small></h2>' +
+      '<div class="ch-num"><div><span>Market cap</span><b>' + L.fmtUsd(mc(c)) + '</b></div><div><span>Volume 24h</span><b>' + L.fmtUsd(c.vol.h24) + '</b></div></div>' +
       '<div class="ch-acts"><button class="btn btn-p" type="button" data-a="' + c.address + '">Open token</button><button class="btn" type="button" data-a="' + c.address + '" data-buy="1">Buy ' + esc(c.symbol) + '</button></div><p class="ch-rule">Picked automatically by real 24 h trading volume. This spot cannot be bought.</p>';
   }
 

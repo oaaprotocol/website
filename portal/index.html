@@ -67,23 +67,38 @@ h1 em{font-style:normal;background:linear-gradient(90deg,#7ff3ec,#33d1c9 40%,#e9
 .ch-badge{position:absolute;left:20px;top:18px;z-index:3;display:flex;align-items:center;gap:8px;font:400 10.5px var(--display);letter-spacing:.26em;color:var(--acc2)}
 .ch-badge i{width:8px;height:8px;border-radius:50%;background:#ff5c7a;box-shadow:0 0 0 0 rgba(255,92,122,.7);animation:live 1.6s infinite}
 @keyframes live{70%{box-shadow:0 0 0 8px rgba(255,92,122,0)}}
-.ch-stage{position:relative}.ch-agent{--hx:86%;--hy:50%}
-.ch-agent{position:absolute;left:50%;bottom:0;width:300px;height:360px;transform:translateX(-50%)}
-.ch-agent img,.ch-agent svg{max-height:100%;max-width:100%;display:block;filter:drop-shadow(0 30px 40px rgba(0,0,0,.6))}
-.ch-slot{position:absolute;left:16px;bottom:14px;z-index:3;font-size:10.5px;color:var(--faint);border:1px dashed rgba(127,243,236,.3);padding:4px 8px;border-radius:8px;background:rgba(0,0,0,.35)}
-.coin{position:absolute;left:var(--hx);top:var(--hy);width:96px;height:96px;margin:-48px 0 0 -48px;z-index:4;perspective:600px;animation:float 3.6s ease-in-out infinite}
-.coin-in{position:absolute;inset:0;border-radius:50%;transform-style:preserve-3d;animation:flip 6s ease-in-out infinite}
-.coin-f{position:absolute;inset:0;border-radius:50%;display:grid;place-items:center;backface-visibility:hidden;font:800 18px var(--body);color:#041615;background:radial-gradient(circle at 32% 28%,#fff 0,#bdfcf8 18%,var(--cc,#33d1c9) 55%,#0b5f5b 100%);box-shadow:inset 0 0 0 4px rgba(255,255,255,.35),inset 0 -6px 14px rgba(0,0,0,.35),0 0 40px var(--cc,#33d1c9)}
-.coin-f.b{transform:rotateY(180deg);font:400 12px var(--display);letter-spacing:.1em}
-@keyframes flip{0%,40%{transform:rotateY(0)}50%,90%{transform:rotateY(180deg)}100%{transform:rotateY(360deg)}}
-@keyframes float{50%{transform:translateY(-8px)}}
-.coin::after{content:'';position:absolute;left:10%;right:10%;bottom:-26px;height:12px;border-radius:50%;background:radial-gradient(closest-side,rgba(51,209,201,.35),transparent);animation:float 3.6s ease-in-out infinite reverse}
+.ch-stage{position:relative}
+.ch-agent{position:absolute;left:50%;bottom:-6px;width:min(440px,112%);aspect-ratio:1;transform:translateX(-50%)}
+.ch-agent>img{position:absolute;inset:0;width:100%;height:100%;display:block}
+.ag-body{filter:drop-shadow(0 30px 40px rgba(0,0,0,.6))}.ag-hands{z-index:3;pointer-events:none}
+.ch-agent::before{content:'';position:absolute;left:51.4%;top:68.6%;width:62%;aspect-ratio:1;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(closest-side,rgba(51,209,201,.35),transparent);filter:blur(18px);animation:orbGlow 4s ease-in-out infinite}
+.orb{position:absolute;z-index:2;left:51.4%;top:68.6%;width:36.6%;aspect-ratio:1;transform:translate(-50%,-50%);border-radius:50%;overflow:hidden;isolation:isolate}
+.orb>span{position:absolute;inset:0;border-radius:50%}
+.orb-core{background:radial-gradient(circle at 50% 54%,rgba(2,22,24,.92) 0,rgba(3,44,46,.75) 34%,rgba(8,90,90,.32) 60%,transparent 76%);animation:orbCore 5s ease-in-out infinite}
+.orb-caus{inset:-30%!important;background:conic-gradient(from 0deg,transparent 0 8%,rgba(190,255,250,.28) 12%,transparent 18% 40%,rgba(127,243,236,.22) 46%,transparent 52% 70%,rgba(220,255,252,.25) 76%,transparent 82%);filter:blur(10px);mix-blend-mode:screen;animation:orbSpin 14s linear infinite}
+.orb-tok{inset:21%!important;display:grid;place-items:center;transform-style:preserve-3d;animation:orbTok 9s ease-in-out infinite}
+.orb-tok img{width:100%;height:100%;object-fit:cover;border-radius:50%;filter:drop-shadow(0 0 14px rgba(127,243,236,.75)) saturate(1.15);animation:orbHue 6s ease-in-out infinite}
+.orb-tok b{display:none;font:400 clamp(16px,3.4vw,26px) var(--display);letter-spacing:.06em;color:#dffffc;text-shadow:0 0 12px #33d1c9,0 0 30px rgba(51,209,201,.8)}
+.orb-tok.txt img{display:none}.orb-tok.txt b{display:block}
+.orb-sweep{background:linear-gradient(115deg,transparent 30%,rgba(255,255,255,.0) 38%,rgba(255,255,255,.38) 48%,rgba(255,255,255,0) 58%,transparent 66%);background-size:260% 100%;mix-blend-mode:screen;animation:orbSweep 5.5s ease-in-out infinite}
+.orb-spark{background:radial-gradient(circle at 30% 70%,rgba(255,255,255,.55) 0 1.5%,transparent 2.5%),radial-gradient(circle at 72% 36%,rgba(255,255,255,.5) 0 1.2%,transparent 2.2%),radial-gradient(circle at 60% 78%,rgba(200,255,250,.5) 0 1%,transparent 2%);mix-blend-mode:screen;animation:orbSpin 22s linear infinite reverse,orbTw 3s ease-in-out infinite}
+.orb-shine{background:radial-gradient(38% 22% at 34% 20%,rgba(255,255,255,.7),rgba(255,255,255,0) 70%),radial-gradient(60% 60% at 50% 50%,transparent 70%,rgba(190,255,250,.35) 92%,rgba(255,255,255,.55) 100%);animation:orbShine 7s ease-in-out infinite}
+@keyframes orbSpin{to{transform:rotate(360deg)}}
+@keyframes orbTok{0%,100%{transform:perspective(500px) rotateY(-22deg) rotateX(6deg) translateY(2%) scale(.96)}25%{transform:perspective(500px) rotateY(0) rotateX(-4deg) translateY(-3%) scale(1)}50%{transform:perspective(500px) rotateY(22deg) rotateX(6deg) translateY(2%) scale(.96)}75%{transform:perspective(500px) rotateY(0) rotateX(-6deg) translateY(-2%) scale(1.02)}}
+@keyframes orbHue{50%{filter:drop-shadow(0 0 22px rgba(190,255,250,.95)) saturate(1.3) brightness(1.12)}}
+@keyframes orbSweep{0%,20%{background-position:120% 0}70%,100%{background-position:-60% 0}}
+@keyframes orbShine{50%{transform:translate(4%,3%)}}
+@keyframes orbCore{50%{opacity:.78;transform:scale(1.04)}}
+@keyframes orbGlow{50%{opacity:.6;transform:translate(-50%,-50%) scale(1.06)}}
+@keyframes orbTw{50%{opacity:.35}}
+@media (prefers-reduced-motion:reduce){.orb *,.ch-agent::before{animation:none!important}}
 .ch-info{position:relative;z-index:2;padding:64px 26px 24px 8px;display:flex;flex-direction:column;justify-content:center;gap:14px}
 .ch-info h2{margin:0;font:400 28px/1.15 var(--display)}.ch-info h2 small{display:block;font:600 13px var(--body);color:var(--muted);letter-spacing:0;margin-top:8px}
 .ch-num{display:grid;grid-template-columns:1fr 1fr;gap:8px}.ch-num div{padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.04);border:1px solid var(--line)}
 .ch-num span{font:700 10px var(--body);letter-spacing:.12em;text-transform:uppercase;color:var(--faint)}.ch-num b{display:block;font-size:16px;margin-top:3px}
 .ch-acts{display:flex;gap:8px}.ch-acts .btn{flex:1;justify-content:center}
 .ch-rule{font-size:11.5px;color:var(--faint)}
+.ch-tk{font:400 15px var(--display);letter-spacing:.08em;color:var(--acc2)}
 
 /* ads */
 .ads{display:grid;grid-template-columns:1fr 300px;gap:14px;margin:0 0 22px}
@@ -253,7 +268,7 @@ tr.r:hover .rbuy{opacity:1}
 @media (min-width:1101px){.top .brand{display:none}}
 @media (max-width:1100px){.hero{grid-template-columns:1fr}.ads{grid-template-columns:1fr}.hl{grid-template-columns:1fr}.launch{grid-template-columns:1fr}.picker{grid-template-columns:repeat(4,1fr)}}
 @media (max-width:760px){.wrap{padding:0 16px}.search,.top .btn:not(.btn-p),.brand small{display:none}.top .btn-p{margin-left:auto}.kpis{grid-template-columns:1fr 1fr}
- .hide-m{display:none}.picker{grid-template-columns:repeat(2,1fr)}.champ{grid-template-columns:1fr;min-height:0}.ch-stage{height:300px}.ch-info{padding:6px 18px 20px}.ads{grid-template-columns:1fr}.plans{grid-template-columns:1fr 1fr}.ad-s .btn{display:none}.top .wrap{gap:12px}.btn-p{padding:0 12px}
+ .hide-m{display:none}.picker{grid-template-columns:repeat(2,1fr)}.champ{grid-template-columns:1fr;min-height:0}.ch-stage{height:320px}.ch-agent{width:290px}.ch-info{padding:6px 18px 20px}.ads{grid-template-columns:1fr}.plans{grid-template-columns:1fr 1fr}.ad-s .btn{display:none}.top .wrap{gap:12px}.btn-p{padding:0 12px}
  td,th{padding:10px 7px}.spark{width:64px}.tok small,.new{display:none}th:first-child,td:first-child{display:none}.tok{gap:8px}.tbl{overflow-x:auto}.seg button{padding:7px 9px}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
@@ -335,18 +350,17 @@ a.btn{text-decoration:none;color:inherit}
    <span class="ch-badge"><i></i>MOST TRADED RIGHT NOW</span>
    <div class="ch-stage">
     <div class="ch-agent" id="agentImg">
-     <svg viewBox="0 0 300 360" width="300" height="360" aria-hidden="true"><defs><linearGradient id="ag" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1d3335"/><stop offset="1" stop-color="#0b1516"/></linearGradient><linearGradient id="ae" x1="0" x2="1"><stop offset="0" stop-color="#7ff3ec"/><stop offset="1" stop-color="#33d1c9"/></linearGradient></defs>
-      <path d="M60 360c4-70 30-112 90-112s86 42 90 112z" fill="url(#ag)" stroke="rgba(127,243,236,.35)"/>
-      <rect x="92" y="86" width="116" height="104" rx="38" fill="url(#ag)" stroke="rgba(127,243,236,.45)" stroke-width="2"/>
-      <rect x="108" y="116" width="84" height="34" rx="17" fill="#061011" stroke="rgba(127,243,236,.4)"/>
-      <circle cx="132" cy="133" r="7" fill="url(#ae)"><animate attributeName="r" values="7;7;1;7;7" dur="5s" repeatCount="indefinite"/></circle><circle cx="168" cy="133" r="7" fill="url(#ae)"><animate attributeName="r" values="7;7;1;7;7" dur="5s" repeatCount="indefinite"/></circle>
-      <path d="M150 86V62" stroke="rgba(127,243,236,.6)" stroke-width="3"/><circle cx="150" cy="56" r="7" fill="#33d1c9"><animate attributeName="opacity" values="1;.3;1" dur="1.6s" repeatCount="indefinite"/></circle>
-      <path d="M128 190v26h44v-26" fill="url(#ag)" stroke="rgba(127,243,236,.3)"/>
-      <path d="M220 268c22-10 34-36 38-70" fill="none" stroke="url(#ag)" stroke-width="28" stroke-linecap="round"/><path d="M220 268c22-10 34-36 38-70" fill="none" stroke="rgba(127,243,236,.35)" stroke-width="2"/>
-     </svg>
-        <div class="coin" id="coin"><div class="coin-in"><div class="coin-f" id="coinA">OAA</div><div class="coin-f b" id="coinB">#1</div></div>
-    </div></div>
-    
+     <img class="ag-body" src="/assets/lp/robot.webp" width="720" height="720" alt="" decoding="async">
+     <div class="orb" id="orb" aria-hidden="true">
+      <span class="orb-core"></span>
+      <span class="orb-caus"></span>
+      <span class="orb-tok" id="orbTok"><img id="orbImg" src="/assets/lp/oaa-logo.svg" alt=""><b id="orbSym"></b></span>
+      <span class="orb-sweep"></span>
+      <span class="orb-spark"></span>
+      <span class="orb-shine"></span>
+     </div>
+     <img class="ag-hands" src="/assets/lp/robot-hands.webp" width="720" height="720" alt="" decoding="async">
+    </div>
    </div>
    <div class="ch-info" id="chInfo"></div>
   </div>
@@ -394,6 +408,6 @@ a.btn{text-decoration:none;color:inherit}
 </div></div>
 <div class="dr" id="dr"><div class="scrim"></div><aside class="pn" id="pn"></aside></div>
 
-<script src="/assets/lp/lp.js?v=20261102d"></script><script src="/assets/lp/portal.js?v=20261102k"></script><script src="/assets/lp/lp-plus.js?v=20261102k"></script>
+<script src="/assets/lp/lp.js?v=20261102d"></script><script src="/assets/lp/portal.js?v=20261104a"></script><script src="/assets/lp/lp-plus.js?v=20261102k"></script>
 <script src="/assets/lp/sia.js?v=20261102e"></script></body>
 </html>
