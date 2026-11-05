@@ -32,6 +32,7 @@
     if (typeof d === 'string' && d.length >= 10) { try { var p = IFACE.parseError(d); if (p) return MSG[p.name] || p.name; } catch (x) {} }
     var m = e.shortMessage || e.message || String(e);
     if (/insufficient funds/i.test(m)) return 'Not enough ETH on Base for this and the network fee.';
+    if (/could not coalesce|missing revert data|execution reverted/i.test(m)) return 'The wallet could not send this transaction. Check that you are on Base and have enough USDC or ETH, then try again.';
     return m.length > 160 ? m.slice(0, 160) + '…' : m;
   }
   var isLink = function (u) { return /^(https:\/\/|ipfs:\/\/)/i.test(u || ''); };
@@ -131,9 +132,10 @@
         if (!req.trim()) throw new Error('Describe what the agent should do.');
         setSt({ k: '', t: 'Confirm in your wallet…' });
         var sg = await W.signer(), reg = new E.Contract(cfg.registry, ABI, sg), hash = E.id(req.trim()), tx;
-        if (cur === 'eth') tx = await reg.hireWithEth(a.id, units, hash, { value: total });
+        if (cur === 'eth') { var bal = await sg.provider.getBalance(await sg.getAddress()); if (bal < total) throw new Error('Not enough ETH on Base in this wallet.'); tx = await reg.hireWithEth(a.id, units, hash, { value: total }); }
         else {
           var u = new E.Contract(cfg.usdc, ERC20, sg), me = await sg.getAddress();
+          if ((await u.balanceOf(me)) < total) throw new Error('Not enough USDC on Base in this wallet (' + short(me) + '). You need ' + fmtUsdc(total) + ' USDC.');
           if ((await u.allowance(me, cfg.registry)) < total) { setSt({ k: '', t: 'Step 1 of 2: allow USDC for the registry…' }); await (await u.approve(cfg.registry, total)).wait(); }
           setSt({ k: '', t: 'Step 2 of 2: confirm the job…' }); tx = await reg.hireWithUsdc(a.id, units, hash);
         }
