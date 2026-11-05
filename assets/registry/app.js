@@ -47,21 +47,50 @@
   }
 
   // ---------------------------------------------------------------- wallet
+  // wallets announced by the browser (EIP-6963: MetaMask, Rabby, Coinbase, Phantom, OKX, …) + window.ethereum fallback
+  var PROVIDERS = [];
+  window.addEventListener('eip6963:announceProvider', function (e) { var d = e.detail; if (d && d.provider && !PROVIDERS.some(function (x) { return x.info.uuid === d.info.uuid; })) PROVIDERS.push(d); });
+  try { window.dispatchEvent(new Event('eip6963:requestProvider')); } catch (e) {}
   function useWallet(cfg) {
     var s = useState(null), acct = s[0], setAcct = s[1];
+    var pS = useState(null), prov = pS[0], setProv = pS[1];
+    var cS = useState(null), choose = cS[0], setChoose = cS[1];
+    var eS = useState(''), err = eS[0], setErr = eS[1];
+    function pick() {
+      return new Promise(function (res, rej) {
+        try { window.dispatchEvent(new Event('eip6963:requestProvider')); } catch (e) {}
+        setTimeout(function () {
+          var list = PROVIDERS.slice();
+          if (!list.length && window.ethereum) return res(window.ethereum);
+          if (!list.length) return rej(new Error('No wallet found in this browser. Install MetaMask, Rabby or Coinbase Wallet, or open this page in your wallet app’s browser.'));
+          if (list.length === 1) return res(list[0].provider);
+          setChoose({ list: list, res: res, rej: rej });
+        }, 120);
+      });
+    }
     var connect = useCallback(async function () {
-      if (!window.ethereum) throw new Error('No wallet found. Open this page in MetaMask, Coinbase Wallet, Rabby or another wallet browser.');
-      var accs = await window.ethereum.request({ method: 'eth_requestAccounts' });
+      setErr('');
+      var p = prov || await pick();
+      var accs = await p.request({ method: 'eth_requestAccounts' });
       var hex = '0x' + cfg.chainId.toString(16);
-      if ((await window.ethereum.request({ method: 'eth_chainId' })).toLowerCase() !== hex) {
-        try { await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: hex }] }); }
-        catch (e) { if (e && e.code === 4902) await window.ethereum.request({ method: 'wallet_addEthereumChain', params: [{ chainId: hex, chainName: 'Base', nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 }, rpcUrls: [cfg.rpc], blockExplorerUrls: ['https://basescan.org'] }] }); else throw e; }
+      if (String(await p.request({ method: 'eth_chainId' })).toLowerCase() !== hex) {
+        try { await p.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: hex }] }); }
+        catch (e) { if (e && (e.code === 4902 || /unrecognized|not added/i.test(e.message || ''))) await p.request({ method: 'wallet_addEthereumChain', params: [{ chainId: hex, chainName: 'Base', nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 }, rpcUrls: ['https://mainnet.base.org'], blockExplorerUrls: ['https://basescan.org'] }] }); else throw e; }
       }
+      if (!prov) { setProv(p); if (p.on) p.on('accountsChanged', function (a) { setAcct(a && a[0] ? E.getAddress(a[0]) : null); }); }
       setAcct(E.getAddress(accs[0])); return accs[0];
-    }, [cfg]);
-    useEffect(function () { if (!window.ethereum || !window.ethereum.on) return; var f = function (a) { setAcct(a && a[0] ? E.getAddress(a[0]) : null); }; window.ethereum.on('accountsChanged', f); return function () { window.ethereum.removeListener && window.ethereum.removeListener('accountsChanged', f); }; }, []);
-    var signer = useCallback(async function () { await connect(); return new E.BrowserProvider(window.ethereum).getSigner(); }, [connect]);
-    return { acct: acct, connect: connect, signer: signer };
+    }, [cfg, prov]);
+    var signer = useCallback(async function () { await connect(); return new E.BrowserProvider(prov || window.ethereum).getSigner(); }, [connect, prov]);
+    var tryConnect = function () { connect().catch(function (e) { setErr(errText(e)); }); };
+    return { acct: acct, connect: connect, signer: signer, tryConnect: tryConnect, err: err, setErr: setErr, choose: choose, setChoose: setChoose, setProv: setProv };
+  }
+  function WalletChooser(p) {
+    var c = p.W.choose; if (!c) return null;
+    function done(x) { p.W.setChoose(null); if (x) { p.W.setProv(x.provider); c.res(x.provider); } else c.rej({ code: 4001 }); }
+    return h('div', { className: 'rg-scrim center', onClick: function (e) { if (e.target === e.currentTarget) done(null); } },
+      h('div', { className: 'rg-choose' }, h('p', { className: 'rg-eb' }, 'Connect wallet'), h('h3', { className: 'rg-h' }, 'Choose your wallet'),
+        c.list.map(function (x) { return h('button', { key: x.info.uuid, className: 'rg-wopt', onClick: function () { done(x); } }, x.info.icon && h('img', { src: x.info.icon, alt: '' }), x.info.name); }),
+        h('button', { className: 'rg-sort', style: { width: '100%', marginTop: '6px' }, onClick: function () { done(null); } }, 'Cancel')));
   }
 
   // ---------------------------------------------------------------- pieces
@@ -251,7 +280,9 @@
     return h('div', { className: 'rg' },
       h('header', { className: 'rg-head' },
         h('a', { className: 'rg-brand', href: 'https://oaap.si/' }, h('img', { src: '/assets/lp/oaa-logo.svg', alt: '' }), 'OAA', h('span', null, 'Agent Registry')),
-        h('button', { className: 'rg-wal' + (W.acct ? ' on' : ''), onClick: function () { W.connect().catch(function (e) { alert(errText(e)); }); } }, h('i'), W.acct ? short(W.acct) : 'Connect wallet')),
+        h('button', { className: 'rg-wal' + (W.acct ? ' on' : ''), onClick: W.tryConnect }, h('i'), W.acct ? short(W.acct) : 'Connect wallet')),
+      W.err && h('p', { className: 'rg-st err', style: { maxWidth: '720px', margin: '-18px auto 18px' } }, W.err, ' ', h('button', { className: 'rg-sort', style: { height: '30px', marginLeft: '8px' }, onClick: function () { W.setErr(''); } }, 'OK')),
+      h(WalletChooser, { W: W }),
       h('section', { className: 'rg-hero' },
         h('p', { className: 'rg-eb' }, 'OAA · On-chain agents'),
         h('h1', null, 'SI agents, ', h('em', null, 'registered on Base.')),
