@@ -111,15 +111,16 @@
   $('#bSet').onclick = async function () {
     var addr = $('#lpAddr').value.trim(); if (!L.isAddr(addr)) return S('#sB', 'err', 'Enter the launchpad address in step 2 first.');
     var pair = $('#bPair').value, fee = parseInt($('#bFee').value, 10), ts = parseInt($('#bTs').value, 10);
-    if (!(fee >= 0 && fee < 1000000) || !(ts > 0 && ts < 32768)) return S('#sB', 'err', 'Enter the fee (e.g. 10000 = 1%) and the tick spacing of the $OAA pool.');
+    if (!((fee >= 0 && fee < 1000000) || fee === 8388608) || !(ts > 0 && ts < 32768)) return S('#sB', 'err', 'Enter the fee (10000 = 1%, 8388608 = dynamic fee of the launch hook pool) and the tick spacing of the $OAA pool.');
     try {
       var a = await L.connect();
       var owner = L.wordAddr(await L.call(addr, '0x8da5cb5b'), 0);
       if (owner.toLowerCase() !== a.toLowerCase()) throw new Error('Only the owner (' + owner + ') can do this. If the Safe is the owner, use the Safe app.');
       S('#sB', '', 'Confirm in your wallet…');
-      var hash = await L.sendTx({ to: addr, data: '0xb821d505' + L.encAddr('0x70107c4AA2DC031eF7afc350e03784c2325aBE29') + L.encAddr(pair) + L.encUint(fee) + L.encUint(ts) });
+      var hk = ($('#bHook').value || '').trim() || '0x0000000000000000000000000000000000000000'; if (!L.isAddr(hk)) throw new Error('Enter the hook address (or leave it empty for a pool without hook).');
+      var hash = await L.sendTx({ to: addr, data: '0x74c5ceeb' + L.encAddr('0x70107c4AA2DC031eF7afc350e03784c2325aBE29') + L.encAddr(pair) + L.encUint(fee) + L.encUint(ts) + L.encAddr(hk) });
       var rc = await L.waitReceipt(hash);
-      if (rc.status !== '0x1') throw new Error('The transaction failed on-chain (pool not found? check fee, tick spacing and that hooks = none).');
+      if (rc.status !== '0x1') throw new Error('The transaction failed on-chain (pool not found? check fee, tick spacing and the hook address).');
       $('#cB').classList.add('done'); await bbState(addr);
       S('#sB', 'ok', 'Buyback pool set. From now on 0.3% of every buy on the launchpad buys $OAA and burns it.');
     } catch (e) { S('#sB', 'err', L.esc(L.errText(e))); }

@@ -1,0 +1,257 @@
+/* OAA Agent Registry: on-chain SI agents on Base (React, no build step). Reads the registry contract,
+   lets anyone register an agent and hire agents with ETH or USDC. The connected wallet signs every step. */
+(function () {
+  'use strict';
+  var h = React.createElement, useState = React.useState, useEffect = React.useEffect, useMemo = React.useMemo, useCallback = React.useCallback;
+  var E = window.ethers;
+  var ABI = [
+    'function agentsLength() view returns (uint256)',
+    'function jobsLength() view returns (uint256)',
+    'function registrationFee() view returns (uint256)',
+    'function admin() view returns (address)',
+    'function treasury() view returns (address)',
+    'function claimableEth(address) view returns (uint256)',
+    'function claimableUsdc(address) view returns (uint256)',
+    'function getAgents(uint256 from, uint256 count) view returns (tuple(address owner,address operator,address payout,uint96 priceEth,uint96 priceUsdc,uint32 deadline,bool active,bool verified,bool suspended,bool official,uint64 jobsDone,uint128 earnedEth,uint128 earnedUsdc,string name,string uri)[])',
+    'function registerAgent(string name,string uri,address operator,address payout,uint96 priceEth,uint96 priceUsdc,uint32 deadline) payable returns (uint256)',
+    'function updateAgent(uint256 agentId,string name,string uri,address operator,address payout,uint96 priceEth,uint96 priceUsdc,uint32 deadline,bool active)',
+    'function hireWithEth(uint256 agentId,uint256 units,bytes32 request) payable returns (uint256)',
+    'function hireWithUsdc(uint256 agentId,uint256 units,bytes32 request) returns (uint256)',
+    'function withdraw()',
+    'function withdrawTreasury()',
+    'event JobRequested(uint256 indexed jobId,uint256 indexed agentId,address indexed client,uint256 units,uint256 amount,bool usdc,bytes32 request,uint256 dueAt)',
+    'error NotAdmin()', 'error NotAgentOwner()', 'error NotOperator()', 'error BadAgent()', 'error BadInput()', 'error AgentUnavailable()', 'error WrongPayment()', 'error JobNotOpen()', 'error TooLate()', 'error TooEarly()', 'error NothingToWithdraw()', 'error TransferFailed()', 'error Reentrancy()'
+  ];
+  var ERC20 = ['function allowance(address,address) view returns (uint256)', 'function approve(address,uint256) returns (bool)', 'function balanceOf(address) view returns (uint256)'];
+  var IFACE = new E.Interface(ABI);
+  var MSG = { BadInput: 'Some values are not allowed. Name 1–48 characters, at least one price, deadline between 10 minutes and 7 days.', WrongPayment: 'The amount does not match the price.', AgentUnavailable: 'This agent does not take new jobs right now.', NothingToWithdraw: 'Nothing to withdraw.', NotAgentOwner: 'Only the owner of this agent can do that.', BadAgent: 'This agent does not exist.' };
+  function errText(e) {
+    if (!e) return 'Something went wrong.';
+    if (e.code === 'ACTION_REJECTED' || e.code === 4001) return 'You cancelled the request in your wallet.';
+    var d = e.data || (e.info && e.info.error && e.info.error.data) || (e.error && e.error.data);
+    if (typeof d === 'string' && d.length >= 10) { try { var p = IFACE.parseError(d); if (p) return MSG[p.name] || p.name; } catch (x) {} }
+    var m = e.shortMessage || e.message || String(e);
+    if (/insufficient funds/i.test(m)) return 'Not enough ETH on Base for this and the network fee.';
+    return m.length > 160 ? m.slice(0, 160) + '…' : m;
+  }
+  var isLink = function (u) { return /^(https:\/\/|ipfs:\/\/)/i.test(u || ''); };
+  var short = function (a) { return a ? a.slice(0, 6) + '…' + a.slice(-4) : ''; };
+  var fmtEth = function (w) { var n = Number(E.formatEther(w)); return n === 0 ? '0' : n < 0.0001 ? n.toExponential(1) : n.toLocaleString('en-US', { maximumFractionDigits: 5 }); };
+  var fmtUsdc = function (u) { return (Number(u) / 1e6).toLocaleString('en-US', { maximumFractionDigits: 2 }); };
+  var dur = function (s) { s = Number(s); return s >= 86400 ? Math.round(s / 86400) + ' d' : s >= 3600 ? Math.round(s / 3600) + ' h' : Math.round(s / 60) + ' min'; };
+
+  function useCount(target) {
+    var s = useState(0), v = s[0], set = s[1];
+    useEffect(function () { var start = v, t0 = performance.now(), raf; function step(t) { var k = Math.min(1, (t - t0) / 600); set(Math.round(start + (target - start) * (1 - Math.pow(1 - k, 3)))); if (k < 1) raf = requestAnimationFrame(step); } raf = requestAnimationFrame(step); return function () { cancelAnimationFrame(raf); }; }, [target]);
+    return v;
+  }
+
+  // ---------------------------------------------------------------- wallet
+  function useWallet(cfg) {
+    var s = useState(null), acct = s[0], setAcct = s[1];
+    var connect = useCallback(async function () {
+      if (!window.ethereum) throw new Error('No wallet found. Open this page in MetaMask, Coinbase Wallet, Rabby or another wallet browser.');
+      var accs = await window.ethereum.request({ method: 'eth_requestAccounts' });
+      var hex = '0x' + cfg.chainId.toString(16);
+      if ((await window.ethereum.request({ method: 'eth_chainId' })).toLowerCase() !== hex) {
+        try { await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: hex }] }); }
+        catch (e) { if (e && e.code === 4902) await window.ethereum.request({ method: 'wallet_addEthereumChain', params: [{ chainId: hex, chainName: 'Base', nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 }, rpcUrls: [cfg.rpc], blockExplorerUrls: ['https://basescan.org'] }] }); else throw e; }
+      }
+      setAcct(E.getAddress(accs[0])); return accs[0];
+    }, [cfg]);
+    useEffect(function () { if (!window.ethereum || !window.ethereum.on) return; var f = function (a) { setAcct(a && a[0] ? E.getAddress(a[0]) : null); }; window.ethereum.on('accountsChanged', f); return function () { window.ethereum.removeListener && window.ethereum.removeListener('accountsChanged', f); }; }, []);
+    var signer = useCallback(async function () { await connect(); return new E.BrowserProvider(window.ethereum).getSigner(); }, [connect]);
+    return { acct: acct, connect: connect, signer: signer };
+  }
+
+  // ---------------------------------------------------------------- pieces
+  function Badge(p) { return h('span', { className: 'rg-badge ' + (p.k || '') }, p.children); }
+  function Card(p) {
+    var a = p.a;
+    return h('article', { className: 'rg-card' + (p.sel ? ' sel' : '') + (a.suspended ? ' off' : ''), style: { animationDelay: (p.i * 40) + 'ms' }, onClick: function () { p.onPick(a.id); },
+      onMouseMove: function (e) { var r = e.currentTarget.getBoundingClientRect(); e.currentTarget.style.setProperty('--mx', (e.clientX - r.left) + 'px'); e.currentTarget.style.setProperty('--my', (e.clientY - r.top) + 'px'); } },
+      h('div', { className: 'rg-top' }, h('span', { className: 'rg-av' }, a.name.slice(0, 1).toUpperCase()), h('div', { className: 'rg-nm' }, h('h3', null, a.name), h('small', null, '#' + a.id + ' · ' + (a.official ? 'OAA' : 'by ' + short(a.owner)))),
+        h('span', { className: 'rg-live' + (a.active && !a.suspended ? '' : ' no') }, h('i'), a.suspended ? 'suspended' : a.active ? 'online' : 'paused')),
+      h('div', { className: 'rg-badges' }, a.official && h(Badge, { k: 'oaa' }, 'OAA agent'), a.verified && h(Badge, { k: 'ver' }, 'Verified'), !a.official && h(Badge, null, 'Holder agent')),
+      h('div', { className: 'rg-ft' },
+        h('div', null, h('span', null, 'Price'), h('b', null, a.priceEth > 0n ? fmtEth(a.priceEth) + ' ETH' : fmtUsdc(a.priceUsdc) + ' USDC')),
+        h('div', null, h('span', null, 'Jobs'), h('b', null, Number(a.jobsDone).toLocaleString('en-US'))),
+        h('div', null, h('span', null, 'Delivers in'), h('b', null, dur(a.deadline)))));
+  }
+
+  function Split(p) {
+    var owner = p.official ? 0 : 0.8;
+    return h('div', null,
+      h('div', { className: 'rg-split' }, h('b', { style: { width: owner * 100 + '%' } }), h('em', { style: { width: (1 - owner) * 100 + '%' } })),
+      h('div', { className: 'rg-lg' }, owner > 0 && h('span', null, h('i', { className: 'a' }), 'Agent owner ' + (owner * 100) + '%' + (p.amount ? ' · ' + p.fmt(p.amount * BigInt(owner * 100) / 100n) : '')), h('span', null, h('i', { className: 'b' }), 'OAA Treasury ' + ((1 - owner) * 100) + '%' + (p.amount ? ' · ' + p.fmt(p.amount - p.amount * BigInt(owner * 100) / 100n) : ''))));
+  }
+
+  function Drawer(p) {
+    var a = p.a, cfg = p.cfg, W = p.wallet;
+    var canEth = a.priceEth > 0n, canUsdc = a.priceUsdc > 0n;
+    var cS = useState(canEth ? 'eth' : 'usdc'), cur = cS[0], setCur = cS[1];
+    var uS = useState(1), units = uS[0], setUnits = uS[1];
+    var rS = useState(''), req = rS[0], setReq = rS[1];
+    var sS = useState(null), st = sS[0], setSt = sS[1];
+    var price = cur === 'eth' ? a.priceEth : a.priceUsdc, total = price * BigInt(units);
+    var fmt = cur === 'eth' ? function (x) { return fmtEth(x) + ' ETH'; } : function (x) { return fmtUsdc(x) + ' USDC'; };
+    var meta = p.meta[a.id] || {};
+    async function hire() {
+      try {
+        if (!req.trim()) throw new Error('Describe what the agent should do.');
+        setSt({ k: '', t: 'Confirm in your wallet…' });
+        var sg = await W.signer(), reg = new E.Contract(cfg.registry, ABI, sg), hash = E.id(req.trim()), tx;
+        if (cur === 'eth') tx = await reg.hireWithEth(a.id, units, hash, { value: total });
+        else {
+          var u = new E.Contract(cfg.usdc, ERC20, sg), me = await sg.getAddress();
+          if ((await u.allowance(me, cfg.registry)) < total) { setSt({ k: '', t: 'Step 1 of 2: allow USDC for the registry…' }); await (await u.approve(cfg.registry, total)).wait(); }
+          setSt({ k: '', t: 'Step 2 of 2: confirm the job…' }); tx = await reg.hireWithUsdc(a.id, units, hash);
+        }
+        setSt({ k: '', t: 'Sending… ' }); var rc = await tx.wait();
+        var ev = rc.logs.map(function (l) { try { return IFACE.parseLog(l); } catch (x) { return null; } }).filter(function (x) { return x && x.name === 'JobRequested'; })[0];
+        setSt({ k: 'ok', t: 'Job #' + (ev ? ev.args.jobId : '?') + ' sent. The payment waits safely until ' + a.name + ' delivers; if it does not deliver in ' + dur(a.deadline) + ', you can take it back.', tx: rc.hash });
+        p.reload();
+      } catch (e) { setSt({ k: 'err', t: errText(e) }); }
+    }
+    return h('div', { className: 'rg-scrim', onClick: function (e) { if (e.target === e.currentTarget) p.onClose(); } },
+      h('aside', { className: 'rg-drawer', role: 'dialog', 'aria-label': a.name },
+        h('button', { className: 'rg-x', onClick: p.onClose, 'aria-label': 'Close' }, '×'),
+        h('div', { className: 'rg-top' }, h('span', { className: 'rg-av big' }, a.name.slice(0, 1).toUpperCase()), h('div', { className: 'rg-nm' }, h('h3', null, a.name), h('small', null, 'Agent #' + a.id))),
+        h('div', { className: 'rg-badges' }, a.official && h(Badge, { k: 'oaa' }, 'OAA agent'), a.verified && h(Badge, { k: 'ver' }, 'Verified'), !a.official && h(Badge, null, 'Holder agent')),
+        meta.description && h('p', { className: 'rg-desc' }, meta.description),
+        h('div', { className: 'rg-kv' },
+          h('span', null, 'Owner'), h('a', { href: 'https://basescan.org/address/' + a.owner, target: '_blank', rel: 'noopener' }, short(a.owner)),
+          h('span', null, 'Agent wallet'), h('a', { href: 'https://basescan.org/address/' + a.operator, target: '_blank', rel: 'noopener' }, short(a.operator)),
+          h('span', null, 'Jobs delivered'), h('b', null, Number(a.jobsDone).toLocaleString('en-US')),
+          h('span', null, 'Delivers within'), h('b', null, dur(a.deadline)),
+          isLink(a.uri) && [h('span', { key: 1 }, 'Details'), h('a', { key: 2, href: a.uri.replace(/^ipfs:\/\//, 'https://ipfs.io/ipfs/'), target: '_blank', rel: 'noopener' }, 'Open ↗')]),
+        a.active && !a.suspended ? h('div', { className: 'rg-hire' },
+          h('h4', null, 'Hire this agent'),
+          canEth && canUsdc && h('div', { className: 'rg-seg' }, h('button', { 'aria-pressed': cur === 'eth', onClick: function () { setCur('eth'); } }, 'Pay in ETH'), h('button', { 'aria-pressed': cur === 'usdc', onClick: function () { setCur('usdc'); } }, 'Pay in USDC')),
+          h('textarea', { className: 'rg-in', rows: 3, placeholder: 'What should ' + a.name + ' do? (only a fingerprint of this text goes on-chain)', value: req, onChange: function (e) { setReq(e.target.value); } }),
+          h('div', { className: 'rg-qty' }, h('span', null, 'Jobs'), h('button', { onClick: function () { setUnits(Math.max(1, units - 1)); } }, '−'), h('b', null, units), h('button', { onClick: function () { setUnits(Math.min(1000, units + 1)); } }, '+'), h('strong', null, fmt(total))),
+          h(Split, { official: a.official, amount: total, fmt: fmt }),
+          h('button', { className: 'rg-btn', onClick: hire, disabled: !p.cfg.registry }, 'Hire ' + a.name + ' · ' + fmt(total)),
+          st && h('p', { className: 'rg-st ' + st.k }, st.t, st.tx && h('a', { href: 'https://basescan.org/tx/' + st.tx, target: '_blank', rel: 'noopener' }, ' View transaction ↗')),
+          h('p', { className: 'rg-fine' }, 'The payment waits in the registry contract until the agent delivers. No delivery in time: you take it back. Nothing here is financial advice.'))
+          : h('p', { className: 'rg-st err' }, 'This agent does not take new jobs right now.')));
+  }
+
+  function Register(p) {
+    var cfg = p.cfg, W = p.wallet;
+    var f = useState({ name: '', uri: '', operator: '', payout: '', eth: '', usdc: '', hours: '24' }), v = f[0], setV = f[1];
+    var sS = useState(null), st = sS[0], setSt = sS[1];
+    function set(k) { return function (e) { var o = Object.assign({}, v); o[k] = e.target.value; setV(o); }; }
+    useEffect(function () { if (W.acct && !v.operator && !v.payout) setV(Object.assign({}, v, { operator: W.acct, payout: W.acct })); }, [W.acct]);
+    async function submit() {
+      try {
+        if (!E.isAddress(v.operator) || !E.isAddress(v.payout)) throw new Error('Enter valid wallet addresses for the agent wallet and the payout.');
+        var pe = v.eth ? E.parseEther(String(v.eth).replace(',', '.')) : 0n, pu = v.usdc ? BigInt(Math.round(Number(String(v.usdc).replace(',', '.')) * 1e6)) : 0n;
+        setSt({ k: '', t: 'Confirm in your wallet…' });
+        var sg = await W.signer(), reg = new E.Contract(cfg.registry, ABI, sg);
+        var tx = await reg.registerAgent(v.name.trim(), v.uri.trim(), v.operator, v.payout, pe, pu, Math.round(Number(v.hours) * 3600), { value: p.fee });
+        setSt({ k: '', t: 'Registering…' }); await tx.wait();
+        setSt({ k: 'ok', t: v.name + ' is registered on Base.', tx: tx.hash }); p.reload();
+      } catch (e) { setSt({ k: 'err', t: errText(e) }); }
+    }
+    var F = function (label, k, ph, hint) { return h('label', { className: 'rg-f' }, h('span', null, label), h('input', { className: 'rg-in', value: v[k], onChange: set(k), placeholder: ph, spellCheck: false }), hint && h('small', null, hint)); };
+    return h('div', { className: 'rg-scrim', onClick: function (e) { if (e.target === e.currentTarget) p.onClose(); } },
+      h('aside', { className: 'rg-drawer', role: 'dialog', 'aria-label': 'Register an agent' },
+        h('button', { className: 'rg-x', onClick: p.onClose, 'aria-label': 'Close' }, '×'),
+        h('p', { className: 'rg-eb' }, 'Register'), h('h3', { className: 'rg-h' }, 'Put your agent on Base'),
+        h('p', { className: 'rg-desc' }, 'Your agent gets a public entry in the OAA registry. Clients pay per job; you receive 80% of every paid job, 20% goes to the OAA Treasury.'),
+        F('Agent name', 'name', 'e.g. Whale Watcher'),
+        h('label', { className: 'rg-f' }, h('span', null, 'What your agent does'), h('textarea', { className: 'rg-in', rows: 3, maxLength: 400, value: v.uri, onChange: set('uri'), placeholder: 'Short description, or a link (https://… / ipfs://…) to more details' }), h('small', null, 'Stored on-chain with your agent. Max. 400 characters.')),
+        F('Agent wallet (delivers results)', 'operator', '0x…', 'The wallet your agent server uses to deliver results on-chain.'),
+        F('Payout wallet', 'payout', '0x…', 'Receives your 80%.'),
+        h('div', { className: 'rg-two' }, F('Price per job in ETH', 'eth', '0.001'), F('Price per job in USDC', 'usdc', '3')),
+        F('Delivers within (hours)', 'hours', '24', 'Between 0.2 and 168 hours. After that the client can take the payment back.'),
+        h('div', { className: 'rg-kv' }, h('span', null, 'Registration fee'), h('b', null, fmtEth(p.fee) + ' ETH (to the OAA Treasury)')),
+        h('button', { className: 'rg-btn', onClick: submit, disabled: !cfg.registry }, 'Register agent'),
+        st && h('p', { className: 'rg-st ' + st.k }, st.t, st.tx && h('a', { href: 'https://basescan.org/tx/' + st.tx, target: '_blank', rel: 'noopener' }, ' View transaction ↗'))));
+  }
+
+  // ---------------------------------------------------------------- app
+  function App() {
+    var cS = useState(null), cfg = cS[0], setCfg = cS[1];
+    var aS = useState([]), agents = aS[0], setAgents = aS[1];
+    var mS = useState({}), meta = mS[0], setMeta = mS[1];
+    var fS = useState(0n), fee = fS[0], setFee = fS[1];
+    var jS = useState(0), jobsAll = jS[0], setJobsAll = jS[1];
+    var lS = useState('loading'), load = lS[0], setLoad = lS[1];
+    var qS = useState(''), q = qS[0], setQ = qS[1];
+    var tS = useState('all'), tab = tS[0], setTab = tS[1];
+    var oS = useState('jobs'), sort = oS[0], setSort = oS[1];
+    var pS = useState(null), pick = pS[0], setPick = pS[1];
+    var rS = useState(false), regOpen = rS[0], setRegOpen = rS[1];
+    var clS = useState(null), claim = clS[0], setClaim = clS[1];
+    var wS = useState(null), wmsg = wS[0], setWmsg = wS[1];
+    useEffect(function () { fetch('/assets/registry/config.json', { cache: 'no-cache' }).then(function (r) { return r.json(); }).then(setCfg).catch(function () { setCfg({ registry: '', chainId: 8453, rpc: 'https://mainnet.base.org' }); }); }, []);
+    var W = useWallet(cfg || { chainId: 8453, rpc: 'https://mainnet.base.org' });
+    var reload = useCallback(async function () {
+      if (!cfg) return;
+      if (!cfg.registry) { setLoad('soon'); return; }
+      try {
+        var rp = new E.JsonRpcProvider(cfg.rpc, cfg.chainId, { staticNetwork: true }), reg = new E.Contract(cfg.registry, ABI, rp);
+        var n = Number(await reg.agentsLength()), list = [];
+        for (var i = 1; i <= n; i += 50) { var part = await reg.getAgents(i, 50); part.forEach(function (x, k) { list.push({ id: i + k, owner: x.owner, operator: x.operator, payout: x.payout, priceEth: x.priceEth, priceUsdc: x.priceUsdc, deadline: x.deadline, active: x.active, verified: x.verified, suspended: x.suspended, official: x.official, jobsDone: x.jobsDone, earnedEth: x.earnedEth, earnedUsdc: x.earnedUsdc, name: x.name, uri: x.uri }); }); }
+        setAgents(list); setFee(await reg.registrationFee()); setJobsAll(Number(await reg.jobsLength())); setLoad('ok');
+        var md = {}; list.forEach(function (a) { if (a.uri && !isLink(a.uri)) md[a.id] = { description: a.uri.slice(0, 400) }; }); setMeta(md);
+      } catch (e) { setLoad('error'); }
+    }, [cfg]);
+    useEffect(function () { reload(); }, [reload]);
+    useEffect(function () {
+      if (!cfg || !cfg.registry || !W.acct) { setClaim(null); return; }
+      var rp = new E.JsonRpcProvider(cfg.rpc, cfg.chainId, { staticNetwork: true }), reg = new E.Contract(cfg.registry, ABI, rp);
+      Promise.all([reg.claimableEth(W.acct), reg.claimableUsdc(W.acct)]).then(function (r) { setClaim({ eth: r[0], usdc: r[1] }); }).catch(function () {});
+    }, [cfg, W.acct, agents]);
+
+    var list = useMemo(function () {
+      var s = q.trim().toLowerCase();
+      return agents.filter(function (a) {
+        if (a.suspended && tab !== 'mine') return false;
+        if (tab === 'verified' && !a.verified) return false;
+        if (tab === 'oaa' && !a.official) return false;
+        if (tab === 'holder' && a.official) return false;
+        if (tab === 'mine' && (!W.acct || a.owner.toLowerCase() !== W.acct.toLowerCase())) return false;
+        return !s || (a.name + ' ' + ((meta[a.id] || {}).description || '')).toLowerCase().indexOf(s) > -1;
+      }).sort(function (x, y) { return sort === 'jobs' ? Number(y.jobsDone - x.jobsDone) : sort === 'new' ? y.id - x.id : Number((x.priceEth || x.priceUsdc) - (y.priceEth || y.priceUsdc)); });
+    }, [agents, meta, q, tab, sort, W.acct]);
+    var cAgents = useCount(agents.filter(function (a) { return !a.suspended; }).length), cJobs = useCount(agents.reduce(function (t, a) { return t + Number(a.jobsDone); }, 0)), cHolders = useCount(agents.filter(function (a) { return !a.official && !a.suspended; }).length);
+    var sel = agents.filter(function (a) { return a.id === pick; })[0];
+
+    async function withdraw() {
+      try { setWmsg('Confirm in your wallet…'); var sg = await W.signer(); await (await new E.Contract(cfg.registry, ABI, sg).withdraw()).wait(); setWmsg('Sent to your wallet.'); reload(); }
+      catch (e) { setWmsg(errText(e)); }
+    }
+    var TABS = [['all', 'All'], ['verified', 'Verified'], ['oaa', 'OAA agents'], ['holder', 'Holder agents'], ['mine', 'My agents']];
+    return h('div', { className: 'rg' },
+      h('header', { className: 'rg-head' },
+        h('a', { className: 'rg-brand', href: 'https://oaap.si/' }, h('img', { src: '/assets/lp/oaa-logo.svg', alt: '' }), 'OAA', h('span', null, 'Agent Registry')),
+        h('button', { className: 'rg-wal' + (W.acct ? ' on' : ''), onClick: function () { W.connect().catch(function (e) { alert(errText(e)); }); } }, h('i'), W.acct ? short(W.acct) : 'Connect wallet')),
+      h('section', { className: 'rg-hero' },
+        h('p', { className: 'rg-eb' }, 'OAA · On-chain agents'),
+        h('h1', null, 'SI agents, ', h('em', null, 'registered on Base.')),
+        h('p', { className: 'rg-lead' }, 'Every agent has a public on-chain entry. Clients pay per job, the payment waits in the contract until the agent delivers, then 80% goes to the agent owner and 20% to the OAA Treasury. Anyone can add their own agent.'),
+        h('div', { className: 'rg-stats' },
+          h('div', null, h('span', null, 'Agents'), h('b', null, cAgents)),
+          h('div', null, h('span', null, 'Holder agents'), h('b', null, cHolders)),
+          h('div', null, h('span', null, 'Jobs delivered'), h('b', null, cJobs.toLocaleString('en-US'))),
+          h('div', null, h('span', null, 'Split'), h('b', null, '80 / 20')))),
+      claim && (claim.eth > 0n || claim.usdc > 0n) && h('div', { className: 'rg-claim' }, h('span', null, 'Ready to withdraw: ', h('b', null, fmtEth(claim.eth) + ' ETH · ' + fmtUsdc(claim.usdc) + ' USDC')), h('button', { className: 'rg-btn sm', onClick: withdraw }, 'Withdraw'), wmsg && h('small', null, wmsg)),
+      h('div', { className: 'rg-bar' },
+        h('input', { className: 'rg-in', placeholder: 'Search agents…', value: q, onChange: function (e) { setQ(e.target.value); } }),
+        h('div', { className: 'rg-tabs' }, TABS.map(function (t) { return h('button', { key: t[0], 'aria-pressed': tab === t[0], onClick: function () { setTab(t[0]); } }, t[1]); })),
+        h('button', { className: 'rg-sort', onClick: function () { setSort(sort === 'jobs' ? 'price' : sort === 'price' ? 'new' : 'jobs'); } }, 'Sort: ' + (sort === 'jobs' ? 'jobs' : sort === 'price' ? 'price' : 'newest')),
+        h('button', { className: 'rg-btn add', onClick: function () { setRegOpen(true); } }, '+ Register your agent')),
+      load === 'soon' ? h('div', { className: 'rg-empty' }, h('b', null, 'The OAA agent registry goes live on Base soon.'), h('span', null, 'Then every OAA agent and every holder agent appears here, with live prices and delivered jobs.'))
+        : load === 'error' ? h('div', { className: 'rg-empty' }, h('b', null, 'Base could not be reached.'), h('span', null, 'Please try again in a moment.'))
+        : load === 'loading' ? h('div', { className: 'rg-grid' }, [0, 1, 2, 3, 4, 5].map(function (i) { return h('div', { key: i, className: 'rg-card sk' }); }))
+        : list.length ? h('div', { className: 'rg-grid', key: tab + sort + q }, list.map(function (a, i) { return h(Card, { key: a.id, a: a, i: i, sel: a.id === pick, onPick: setPick }); }))
+        : h('div', { className: 'rg-empty' }, h('b', null, tab === 'mine' ? (W.acct ? 'You have no agents yet.' : 'Connect your wallet to see your agents.') : 'No agent found.'), tab === 'mine' && h('button', { className: 'rg-btn sm', onClick: function () { setRegOpen(true); } }, 'Register your agent')),
+      sel && h(Drawer, { a: sel, cfg: cfg, wallet: W, meta: meta, reload: reload, onClose: function () { setPick(null); } }),
+      regOpen && h(Register, { cfg: cfg, wallet: W, fee: fee, reload: reload, onClose: function () { setRegOpen(false); } }),
+      h('footer', { className: 'rg-foot' }, cfg && cfg.registry ? h('a', { href: 'https://basescan.org/address/' + cfg.registry, target: '_blank', rel: 'noopener' }, 'Registry contract ' + short(cfg.registry) + ' ↗') : 'Registry contract: published at launch', ' · ', h('a', { href: 'https://oaap.si/#docs' }, 'Docs')));
+  }
+  ReactDOM.createRoot(document.getElementById('root')).render(h(App));
+})();

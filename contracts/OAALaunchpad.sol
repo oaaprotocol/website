@@ -134,7 +134,7 @@ contract OAALaunchpad is ReentrancyGuard {
     mapping(address => uint256) public creatorFeesWeth;
 
     /// @notice $OAA and the pool used to buy it back: an Aerodrome Slipstream pool (paired with WETH) or a
-    ///         Uniswap V4 pool without hooks (paired with native ETH or WETH).
+    ///         Uniswap V4 pool (paired with native ETH or WETH).
     address public buybackToken;
     address public buybackPool; // Slipstream pool, or the V4 PoolManager when buybackIsV4
     bool public buybackIsV4;
@@ -549,8 +549,9 @@ contract OAALaunchpad is ReentrancyGuard {
     }
 
     /// @notice Sets $OAA (only once) and its Uniswap V4 pool for the buyback: $OAA paired with native ETH
-    ///         (address 0) or WETH, without hooks. The reference price starts at the current pool price.
-    function setBuybackPoolV4(address token, address pairCurrency, uint24 fee, int24 tickSpacing) external onlyOwner {
+    ///         (address 0) or WETH, with or without a hook (e.g. the OAA launch hook). The reference price
+    ///         starts at the current pool price.
+    function setBuybackPoolV4(address token, address pairCurrency, uint24 fee, int24 tickSpacing, address hooks) external onlyOwner {
         require(address(v4PoolManager) != address(0), "OL: no V4");
         require(pairCurrency == address(0) || pairCurrency == weth, "OL: pair ETH or WETH");
         _setBuybackToken(token);
@@ -559,7 +560,7 @@ contract OAALaunchpad is ReentrancyGuard {
             currency1: pairCurrency < token ? token : pairCurrency,
             fee: fee,
             tickSpacing: tickSpacing,
-            hooks: address(0)
+            hooks: hooks
         });
         (uint160 sqrtP, int24 tick) = _v4Slot0(key);
         require(sqrtP != 0, "OL: no pool");
