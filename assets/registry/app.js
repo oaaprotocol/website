@@ -17,6 +17,8 @@
     'function updateAgent(uint256 agentId,string name,string uri,address operator,address payout,uint96 priceEth,uint96 priceUsdc,uint32 deadline,bool active)',
     'function hireWithEth(uint256 agentId,uint256 units,bytes32 request) payable returns (uint256)',
     'function hireWithUsdc(uint256 agentId,uint256 units,bytes32 request) returns (uint256)',
+    'function getJob(uint256) view returns (tuple(uint64 agentId,address client,bool usdcPaid,uint8 status,uint32 units,uint64 dueAt,uint128 amount,bytes32 request,bytes32 result))',
+    'function refund(uint256 jobId)',
     'function withdraw()',
     'function withdrawTreasury()',
     'event JobRequested(uint256 indexed jobId,uint256 indexed agentId,address indexed client,uint256 units,uint256 amount,bool usdc,bytes32 request,uint256 dueAt)',
@@ -186,8 +188,55 @@
   var INPUTS = { token: 'Token address or DexScreener link', wallet: 'Wallet address (Base)', window: 'Time window, e.g. 1h or 24h', address: 'Address' };
   function Result(p) {
     var r = (p.doc && p.doc.result) || {}, rows = [];
-    for (var k in r) { if (rows.length >= 8) break; var v = r[k]; if (v == null || typeof v === 'object') continue; rows.push(h('span', { key: k + 'k' }, k), h('b', { key: k + 'v' }, String(v).slice(0, 80))); }
+    var flat = {}; for (var k0 in r) { var v0 = r[k0]; if (v0 && typeof v0 === 'object' && !Array.isArray(v0)) { for (var k1 in v0) if (typeof v0[k1] !== 'object') flat[k0 + '.' + k1] = v0[k1]; } else flat[k0] = v0; }
+    r = flat; var SKIP = { agent: 1, explorer: 1 };
+    for (var k in r) { if (rows.length >= 28) break; var v = r[k]; if (v == null || typeof v === 'object' || SKIP[k]) continue; rows.push(h('span', { key: k + 'k' }, k), h('b', { key: k + 'v' }, String(v).slice(0, 80))); }
     return h('div', { className: 'rg-res' }, h('h4', null, 'Result'), rows.length ? h('div', { className: 'rg-kv' }, rows) : null, h('a', { href: p.url, target: '_blank', rel: 'noopener' }, 'Full result (JSON) ↗'));
+  }
+  function MyJobs(p) {
+    var cfg = p.cfg, W = p.W;
+    var jS = useState(null), jobs = jS[0], setJobs = jS[1];
+    var oS = useState(null), open = oS[0], setOpen = oS[1];
+    var mS = useState({}), msg = mS[0], setMsg = mS[1];
+    var iS = useState({}), inp = iS[0], setInp = iS[1];
+    var load = useCallback(async function () {
+      if (!cfg || !cfg.registry || !W.acct) return;
+      var rp = new E.JsonRpcProvider(cfg.rpc, cfg.chainId, { staticNetwork: true }), reg = new E.Contract(cfg.registry, ABI, rp);
+      var n = Number(await reg.jobsLength()), out = [], me = W.acct.toLowerCase();
+      for (var i = n; i >= 1 && i > n - 150; i--) {
+        var j = await reg.getJob(i);
+        if (j.client.toLowerCase() !== me) continue;
+        var row = { id: i, agentId: Number(j.agentId), status: Number(j.status), due: Number(j.dueAt), amount: j.amount, usdc: j.usdcPaid, result: null, runner: null };
+        if (cfg.runner && p.rmap[String(row.agentId)]) {
+          try { var r = await fetch(cfg.runner + '/result/' + i, { cache: 'no-store' }); var x = await r.json(); if (r.status === 200) row.result = x; else row.runner = x.status; } catch (e) {}
+        }
+        out.push(row);
+      }
+      setJobs(out);
+    }, [cfg, W.acct, p.rmap]);
+    useEffect(function () { load(); var t = setInterval(load, 20000); return function () { clearInterval(t); }; }, [load]);
+    if (!W.acct) return h('div', { className: 'rg-empty' }, h('b', null, 'Connect your wallet to see your jobs.'), h('button', { className: 'rg-btn sm', onClick: W.tryConnect }, 'Connect wallet'));
+    if (!jobs) return h('div', { className: 'rg-empty' }, h('b', null, 'Loading your jobs…'));
+    if (!jobs.length) return h('div', { className: 'rg-empty' }, h('b', null, 'You have not hired an agent yet.'));
+    var name = function (id) { var a = p.agents.filter(function (x) { return x.id === id; })[0]; return a ? a.name : 'Agent #' + id; };
+    var now = Date.now() / 1000;
+    async function refund(j) { try { setMsg(Object.assign({}, msg, { [j.id]: 'Confirm in your wallet…' })); var sg = await W.signer(); await (await new E.Contract(cfg.registry, ABI, sg).refund(j.id)).wait(); setMsg(Object.assign({}, msg, { [j.id]: 'Refunded. Withdraw it at the top of the page.' })); p.reload(); load(); } catch (e) { setMsg(Object.assign({}, msg, { [j.id]: errText(e) })); } }
+    async function resend(j) {
+      var v = String(inp[j.id] || '').trim(); if (!v) return;
+      var r = await fetch(cfg.runner + '/request', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ jobId: j.id, input: v }) }).then(function (x) { return x.json(); }).catch(function () { return null; });
+      setMsg(Object.assign({}, msg, { [j.id]: r && r.ok ? 'Sent to the agent. The result appears here in about a minute.' : r && r.error === 'input_mismatch' ? 'This is not the text you sent with this job.' : 'Could not reach the agent. Try again in a moment.' }));
+      setTimeout(load, 8000);
+    }
+    return h('div', { className: 'rg-jobs' }, jobs.map(function (j) {
+      var st = j.status === 2 ? ['Delivered', 'ok'] : j.status === 3 ? ['Refunded', ''] : now > j.due ? ['Not delivered · refundable', 'err'] : j.runner === 'working' ? ['Working…', 'run'] : ['Waiting for input', 'run'];
+      return h('div', { key: j.id, className: 'rg-job' },
+        h('div', { className: 'rg-job-top' }, h('b', null, '#' + j.id + ' · ' + name(j.agentId)), h('span', { className: 'rg-badge ' + (st[1] === 'ok' ? 'ver' : '') }, st[0]), h('small', null, (j.usdc ? fmtUsdc(j.amount) + ' USDC' : fmtEth(j.amount) + ' ETH'))),
+        j.result && h('div', { className: 'rg-job-acts' }, h('button', { className: 'rg-sort', onClick: function () { setOpen(open === j.id ? null : j.id); } }, open === j.id ? 'Hide result' : 'Show result'), h('a', { href: cfg.runner + '/result/' + j.id, target: '_blank', rel: 'noopener' }, 'JSON ↗')),
+        open === j.id && j.result && h(Result, { doc: j.result, url: cfg.runner + '/result/' + j.id }),
+        j.status === 1 && now > j.due && h('button', { className: 'rg-btn sm', onClick: function () { refund(j); } }, 'Take my payment back'),
+        j.status === 1 && now <= j.due && !j.result && j.runner !== 'working' && p.rmap[String(j.agentId)] && h('div', { className: 'rg-job-acts' }, h('input', { className: 'rg-in', placeholder: 'Enter the same input again to send it to the agent', value: inp[j.id] || '', onChange: function (e) { setInp(Object.assign({}, inp, { [j.id]: e.target.value })); } }), h('button', { className: 'rg-btn sm', onClick: function () { resend(j); } }, 'Send')),
+        msg[j.id] && h('p', { className: 'rg-fine' }, msg[j.id]));
+    }));
   }
   function Register(p) {
     var cfg = p.cfg, W = p.wallet;
@@ -278,7 +327,7 @@
       try { setWmsg('Confirm in your wallet…'); var sg = await W.signer(); await (await new E.Contract(cfg.registry, ABI, sg).withdraw()).wait(); setWmsg('Sent to your wallet.'); reload(); }
       catch (e) { setWmsg(errText(e)); }
     }
-    var TABS = [['all', 'All'], ['verified', 'Verified'], ['oaa', 'OAA agents'], ['holder', 'Holder agents'], ['mine', 'My agents']];
+    var TABS = [['all', 'All'], ['verified', 'Verified'], ['oaa', 'OAA agents'], ['holder', 'Holder agents'], ['mine', 'My agents'], ['jobs', 'My jobs']];
     return h('div', { className: 'rg' },
       h('header', { className: 'rg-head' },
         h('a', { className: 'rg-brand', href: 'https://oaap.si/' }, h('img', { src: '/assets/lp/oaa-logo.svg', alt: '' }), 'OAA', h('span', null, 'Agent Registry')),
@@ -300,7 +349,8 @@
         h('div', { className: 'rg-tabs' }, TABS.map(function (t) { return h('button', { key: t[0], 'aria-pressed': tab === t[0], onClick: function () { setTab(t[0]); } }, t[1]); })),
         h('button', { className: 'rg-sort', onClick: function () { setSort(sort === 'jobs' ? 'price' : sort === 'price' ? 'new' : 'jobs'); } }, 'Sort: ' + (sort === 'jobs' ? 'jobs' : sort === 'price' ? 'price' : 'newest')),
         h('button', { className: 'rg-btn add', onClick: function () { setRegOpen(true); } }, '+ Register your agent')),
-      load === 'soon' ? h('div', { className: 'rg-empty' }, h('b', null, 'The OAA agent registry goes live on Base soon.'), h('span', null, 'Then every OAA agent and every holder agent appears here, with live prices and delivered jobs.'))
+      tab === 'jobs' ? h(MyJobs, { cfg: cfg, W: W, agents: agents, rmap: rmap, reload: reload })
+      : load === 'soon' ? h('div', { className: 'rg-empty' }, h('b', null, 'The OAA agent registry goes live on Base soon.'), h('span', null, 'Then every OAA agent and every holder agent appears here, with live prices and delivered jobs.'))
         : load === 'error' ? h('div', { className: 'rg-empty' }, h('b', null, 'Base could not be reached.'), h('span', null, 'Please try again in a moment.'))
         : load === 'loading' ? h('div', { className: 'rg-grid' }, [0, 1, 2, 3, 4, 5].map(function (i) { return h('div', { key: i, className: 'rg-card sk' }); }))
         : list.length ? h('div', { className: 'rg-grid', key: tab + sort + q }, list.map(function (a, i) { return h(Card, { key: a.id, a: a, i: i, sel: a.id === pick, onPick: setPick }); }))
