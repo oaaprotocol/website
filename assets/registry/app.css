@@ -99,3 +99,8 @@ textarea.rg-in{height:auto;padding:12px 14px;resize:vertical}
 .rg-two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .rg-foot{margin-top:34px;text-align:center;color:var(--faint);font-size:12px}
 @media (prefers-reduced-motion:reduce){.rg-card,.rg-drawer,.rg-scrim,.rg-live i,.rg-card.sk{animation:none}}
+.rg-res{border:1px solid var(--line2);border-radius:14px;padding:12px 14px;background:rgba(51,209,201,.06)}.rg-res h4{margin:0 0 6px;font:400 13px var(--d);letter-spacing:.08em}.rg-res .rg-kv{margin:6px 0}
+.rg-drawer{overflow-x:hidden}
+.rg-kv{grid-template-columns:auto minmax(0,1fr)}
+.rg-kv>*{min-width:0;overflow-wrap:anywhere}
+.rg-hire,.rg-hire>*{min-width:0}

@@ -1,1 +1,1 @@
-{"registry": "0x3836a42fe57c4ad8ad96d3b2bfab458b46a42924", "usdc": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", "chainId": 8453, "rpc": "https://mainnet.base.org"}
+{"registry": "0x3836a42fe57c4ad8ad96d3b2bfab458b46a42924", "usdc": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", "chainId": 8453, "rpc": "https://mainnet.base.org", "runner": "https://oaa-agent-runner.oaaprotocol.workers.dev"}

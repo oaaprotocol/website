@@ -93,6 +93,7 @@
     var uS = useState(1), units = uS[0], setUnits = uS[1];
     var rS = useState(''), req = rS[0], setReq = rS[1];
     var sS = useState(null), st = sS[0], setSt = sS[1];
+    var oS = useState(null), out = oS[0], setOut = oS[1];
     var price = cur === 'eth' ? a.priceEth : a.priceUsdc, total = price * BigInt(units);
     var fmt = cur === 'eth' ? function (x) { return fmtEth(x) + ' ETH'; } : function (x) { return fmtUsdc(x) + ' USDC'; };
     var meta = p.meta[a.id] || {};
@@ -109,7 +110,20 @@
         }
         setSt({ k: '', t: 'Sending… ' }); var rc = await tx.wait();
         var ev = rc.logs.map(function (l) { try { return IFACE.parseLog(l); } catch (x) { return null; } }).filter(function (x) { return x && x.name === 'JobRequested'; })[0];
-        setSt({ k: 'ok', t: 'Job #' + (ev ? ev.args.jobId : '?') + ' sent. The payment waits safely until ' + a.name + ' delivers; if it does not deliver in ' + dur(a.deadline) + ', you can take it back.', tx: rc.hash });
+        var jid = ev ? Number(ev.args.jobId) : null;
+        setSt({ k: 'ok', t: 'Job #' + (jid || '?') + ' sent. The payment waits safely until ' + a.name + ' delivers; if it does not deliver in ' + dur(a.deadline) + ', you can take it back.', tx: rc.hash });
+        if (jid && p.run && cfg.runner) {
+          var sent = await fetch(cfg.runner + '/request', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ jobId: jid, input: req.trim() }) }).then(function (r) { return r.json(); }).catch(function () { return null; });
+          if (sent && sent.ok) {
+            fetch(cfg.runner + '/run', { method: 'POST' }).catch(function () {});
+            setSt({ k: 'ok', t: a.name + ' is working on job #' + jid + '… the result is delivered on-chain, usually within a minute.', tx: rc.hash });
+            for (var t = 0; t < 45; t++) {
+              await new Promise(function (r) { setTimeout(r, 4000); });
+              var res = await fetch(cfg.runner + '/result/' + jid).then(function (r) { return r.status === 200 ? r.json() : null; }).catch(function () { return null; });
+              if (res) { setOut(res); setSt({ k: 'ok', t: 'Delivered on-chain. Job #' + jid + ' is complete.', tx: rc.hash }); break; }
+            }
+          }
+        }
         p.reload();
       } catch (e) { setSt({ k: 'err', t: errText(e) }); }
     }
@@ -128,15 +142,22 @@
         a.active && !a.suspended ? h('div', { className: 'rg-hire' },
           h('h4', null, 'Hire this agent'),
           canEth && canUsdc && h('div', { className: 'rg-seg' }, h('button', { 'aria-pressed': cur === 'eth', onClick: function () { setCur('eth'); } }, 'Pay in ETH'), h('button', { 'aria-pressed': cur === 'usdc', onClick: function () { setCur('usdc'); } }, 'Pay in USDC')),
-          h('textarea', { className: 'rg-in', rows: 3, placeholder: 'What should ' + a.name + ' do? (only a fingerprint of this text goes on-chain)', value: req, onChange: function (e) { setReq(e.target.value); } }),
+          h('textarea', { className: 'rg-in', rows: p.run ? 1 : 3, placeholder: p.run ? (INPUTS[p.run.param] || 'Input') : 'What should ' + a.name + ' do? (only a fingerprint of this text goes on-chain)', value: req, onChange: function (e) { setReq(e.target.value); } }),
           h('div', { className: 'rg-qty' }, h('span', null, 'Jobs'), h('button', { onClick: function () { setUnits(Math.max(1, units - 1)); } }, '−'), h('b', null, units), h('button', { onClick: function () { setUnits(Math.min(1000, units + 1)); } }, '+'), h('strong', null, fmt(total))),
           h(Split, { official: a.official, amount: total, fmt: fmt }),
           h('button', { className: 'rg-btn', onClick: hire, disabled: !p.cfg.registry }, 'Hire ' + a.name + ' · ' + fmt(total)),
           st && h('p', { className: 'rg-st ' + st.k }, st.t, st.tx && h('a', { href: 'https://basescan.org/tx/' + st.tx, target: '_blank', rel: 'noopener' }, ' View transaction ↗')),
+          out && h(Result, { doc: out, url: cfg.runner + '/result/' + out.jobId }),
           h('p', { className: 'rg-fine' }, 'The payment waits in the registry contract until the agent delivers. No delivery in time: you take it back. Nothing here is financial advice.'))
           : h('p', { className: 'rg-st err' }, 'This agent does not take new jobs right now.')));
   }
 
+  var INPUTS = { token: 'Token address or DexScreener link', wallet: 'Wallet address (Base)', window: 'Time window, e.g. 1h or 24h', address: 'Address' };
+  function Result(p) {
+    var r = (p.doc && p.doc.result) || {}, rows = [];
+    for (var k in r) { if (rows.length >= 8) break; var v = r[k]; if (v == null || typeof v === 'object') continue; rows.push(h('span', { key: k + 'k' }, k), h('b', { key: k + 'v' }, String(v).slice(0, 80))); }
+    return h('div', { className: 'rg-res' }, h('h4', null, 'Result'), rows.length ? h('div', { className: 'rg-kv' }, rows) : null, h('a', { href: p.url, target: '_blank', rel: 'noopener' }, 'Full result (JSON) ↗'));
+  }
   function Register(p) {
     var cfg = p.cfg, W = p.wallet;
     var f = useState({ name: '', uri: '', operator: '', payout: '', eth: '', usdc: '', hours: '24' }), v = f[0], setV = f[1];
@@ -186,6 +207,8 @@
     var rS = useState(false), regOpen = rS[0], setRegOpen = rS[1];
     var clS = useState(null), claim = clS[0], setClaim = clS[1];
     var wS = useState(null), wmsg = wS[0], setWmsg = wS[1];
+    var rmS = useState({}), rmap = rmS[0], setRmap = rmS[1];
+    useEffect(function () { if (cfg && cfg.runner) fetch(cfg.runner + '/agents').then(function (r) { return r.json(); }).then(function (j) { setRmap((j && j.agents) || {}); }).catch(function () {}); }, [cfg]);
     useEffect(function () { fetch('/assets/registry/config.json', { cache: 'no-cache' }).then(function (r) { return r.json(); }).then(setCfg).catch(function () { setCfg({ registry: '', chainId: 8453, rpc: 'https://mainnet.base.org' }); }); }, []);
     var W = useWallet(cfg || { chainId: 8453, rpc: 'https://mainnet.base.org' });
     var reload = useCallback(async function () {
@@ -248,8 +271,8 @@
         : load === 'error' ? h('div', { className: 'rg-empty' }, h('b', null, 'Base could not be reached.'), h('span', null, 'Please try again in a moment.'))
         : load === 'loading' ? h('div', { className: 'rg-grid' }, [0, 1, 2, 3, 4, 5].map(function (i) { return h('div', { key: i, className: 'rg-card sk' }); }))
         : list.length ? h('div', { className: 'rg-grid', key: tab + sort + q }, list.map(function (a, i) { return h(Card, { key: a.id, a: a, i: i, sel: a.id === pick, onPick: setPick }); }))
-        : h('div', { className: 'rg-empty' }, h('b', null, tab === 'mine' ? (W.acct ? 'You have no agents yet.' : 'Connect your wallet to see your agents.') : 'No agent found.'), tab === 'mine' && h('button', { className: 'rg-btn sm', onClick: function () { setRegOpen(true); } }, 'Register your agent')),
-      sel && h(Drawer, { a: sel, cfg: cfg, wallet: W, meta: meta, reload: reload, onClose: function () { setPick(null); } }),
+        : h('div', { className: 'rg-empty' }, h('b', null, tab === 'mine' ? (W.acct ? 'You have no agents yet.' : 'Connect your wallet to see your agents.') : agents.length ? 'No agent found.' : 'No agents registered yet. Be the first.'), (tab === 'mine' || !agents.length) && h('button', { className: 'rg-btn sm', onClick: function () { setRegOpen(true); } }, 'Register your agent')),
+      sel && h(Drawer, { a: sel, cfg: cfg, wallet: W, meta: meta, run: rmap[String(sel.id)], reload: reload, onClose: function () { setPick(null); } }),
       regOpen && h(Register, { cfg: cfg, wallet: W, fee: fee, reload: reload, onClose: function () { setRegOpen(false); } }),
       h('footer', { className: 'rg-foot' }, cfg && cfg.registry ? h('a', { href: 'https://basescan.org/address/' + cfg.registry, target: '_blank', rel: 'noopener' }, 'Registry contract ' + short(cfg.registry) + ' ↗') : 'Registry contract: published at launch', ' · ', h('a', { href: 'https://oaap.si/#docs' }, 'Docs')));
   }
