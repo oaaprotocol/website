@@ -2,7 +2,7 @@
 [build]
   publish = "."
 
-# launch.oaap.si, portal.oaap.si and buy.oaap.si show their pages (domain aliases of this site)
+# launch.oaap.si, portal.oaap.si, buy.oaap.si and agentverse.oaap.si show their pages (domain aliases of this site)
 [[redirects]]
   from = "https://launch.oaap.si/"
   to = "/launch/"
@@ -18,6 +18,12 @@
 [[redirects]]
   from = "https://buy.oaap.si/"
   to = "/buy/"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "https://agentverse.oaap.si/"
+  to = "/agentverse/"
   status = 200
   force = true
 
