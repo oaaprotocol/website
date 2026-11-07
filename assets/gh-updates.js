@@ -165,7 +165,7 @@
     return span;
   }
   // every picture appears only once in the build log
-  var USED = {}, COVERS = ['agents', 'launchpad', 'token', 'risk', 'code', 'website'].map(function (n) { return 'assets/updates/' + n + '.webp'; })
+  var USED = {}, COVERS = ['agents', 'launchpad', 'token', 'risk', 'code'].map(function (n) { return 'assets/updates/' + n + '.webp'; })
     .concat(['assets/oaa-shore-960.webp', 'assets/oaa-room-960.webp', 'assets/oaa-sky-960.webp', 'assets/oaa-dancer-sm.webp']);
   function pic(n) { return String(n).split('/').pop().toLowerCase().replace(/\.(webp|png|jpe?g|gif|avif)$/, '').replace(/([-_@](\d{2,4}w?|\dx|small|large|sm|lg|hd|4k))+$/, ''); } // same picture in another size counts once
   // picks the picture for a card: a free cover first (its topic first), else a real scene picture from the commit
