@@ -4,12 +4,25 @@ pragma abicoder v2;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-import "contracts/core/libraries/TickMath.sol";
-import "contracts/core/libraries/FullMath.sol";
-import "contracts/core/interfaces/ICLFactory.sol";
-import "contracts/periphery/interfaces/INonfungiblePositionManager.sol";
-import "contracts/periphery/interfaces/ISwapRouter.sol";
+import "@uniswap/v3-core/contracts/libraries/TickMath.sol";
+import "@uniswap/v3-core/contracts/libraries/FullMath.sol";
+import "@uniswap/v3-core/contracts/interfaces/IUniswapV3Factory.sol";
+import "@uniswap/v3-periphery/contracts/interfaces/INonfungiblePositionManager.sol";
 import "./OAAToken.sol";
+
+/// @dev Uniswap SwapRouter02 on Base (V3 single-pool swap only).
+interface IV3SwapRouter {
+    struct ExactInputSingleParams {
+        address tokenIn;
+        address tokenOut;
+        uint24 fee;
+        address recipient;
+        uint256 amountIn;
+        uint256 amountOutMinimum;
+        uint160 sqrtPriceLimitX96;
+    }
+    function exactInputSingle(ExactInputSingleParams calldata params) external payable returns (uint256 amountOut);
+}
 
 interface IWETH9Minimal {
     function deposit() external payable;
@@ -27,7 +40,7 @@ interface IAggregatorV3 {
     function decimals() external view returns (uint8);
 }
 
-/// @dev Aerodrome Slipstream pool (same interface as Uniswap V3 pools).
+/// @dev Uniswap V3 pool (only the calls the $OAA buyback needs).
 interface IV3PoolLike {
     function token0() external view returns (address);
     function token1() external view returns (address);
@@ -63,19 +76,20 @@ interface IPoolManagerV4 {
 }
 
 /// @title OAALaunchpad
-/// @notice Launches fixed-supply tokens "powered by OAA" on Aerodrome Slipstream (Base).
+/// @notice Launches fixed-supply tokens "powered by OAA" on Uniswap V3 (Base).
 ///         - 1,000,000,000 supply, 18 decimals, no owner, no mint, no tax in the token itself
 ///         - 100% of the supply goes into the pool as single-sided liquidity in three ranges:
 ///           50% from $30k to $1M market cap, 30% from $1M to $50M, 20% from $50M to $1B
 ///         - the three position NFTs stay in this contract forever: the liquidity can never be removed
-///         - the pool uses the 1% fee tier; the fees earned by the locked positions are split:
+///         - the pool is a Uniswap V3 pool with the 1% fee tier; the fees earned by the locked positions are split:
 ///           paid in WETH on buys: 40% to the creator, 30% to the OAA treasury, 30% buys $OAA and burns it;
 ///           paid in the launched token on sells: 40% to the creator, 60% to the OAA treasury
 ///         - the creator may buy first in the same transaction, for up to $500 in ETH (not locked)
 contract OAALaunchpad is ReentrancyGuard {
     // ---------------------------------------------------------------- fixed rules
     uint256 public constant SUPPLY = 1_000_000_000 ether;
-    int24 public constant TICK_SPACING = 2_000; // Slipstream 1% fee tier
+    uint24 public constant FEE = 10_000; // Uniswap V3 1% fee tier
+    int24 public constant TICK_SPACING = 200; // tick spacing of the 1% tier
     uint256 public constant MAX_DEV_BUY_USD = 500; // whole dollars
     uint256 public constant MAX_ORACLE_AGE = 3 hours;
     uint256 public constant SEQUENCER_GRACE = 1 hours;
@@ -101,8 +115,8 @@ contract OAALaunchpad is ReentrancyGuard {
 
     // ---------------------------------------------------------------- external contracts
     INonfungiblePositionManager public immutable positionManager;
-    ISwapRouter public immutable swapRouter;
-    ICLFactory public immutable poolFactory;
+    IV3SwapRouter public immutable swapRouter;
+    IUniswapV3Factory public immutable poolFactory;
     OAATokenFactory public immutable tokenFactory; // created by this contract, only it can deploy tokens
     IPoolManagerV4 public immutable v4PoolManager; // Uniswap V4 PoolManager on Base (for the $OAA buyback)
     address public immutable weth;
@@ -133,10 +147,10 @@ contract OAALaunchpad is ReentrancyGuard {
     mapping(address => uint256) public feesWeth;
     mapping(address => uint256) public creatorFeesWeth;
 
-    /// @notice $OAA and the pool used to buy it back: an Aerodrome Slipstream pool (paired with WETH) or a
+    /// @notice $OAA and the pool used to buy it back: a Uniswap V3 pool (paired with WETH) or a
     ///         Uniswap V4 pool (paired with native ETH or WETH).
     address public buybackToken;
-    address public buybackPool; // Slipstream pool, or the V4 PoolManager when buybackIsV4
+    address public buybackPool; // Uniswap V3 pool, or the V4 PoolManager when buybackIsV4
     bool public buybackIsV4;
     IPoolManagerV4.PoolKey internal _v4Key;
     /// @notice V4 price guard. Uniswap V4 pools have no built-in price history, so the contract keeps its own
@@ -186,7 +200,7 @@ contract OAALaunchpad is ReentrancyGuard {
 
     constructor(
         INonfungiblePositionManager _positionManager,
-        ISwapRouter _swapRouter,
+        IV3SwapRouter _swapRouter,
         IPoolManagerV4 _v4PoolManager,
         address _weth,
         IAggregatorV3 _ethUsdFeed,
@@ -196,14 +210,14 @@ contract OAALaunchpad is ReentrancyGuard {
         require(_treasury != address(0) && _weth != address(0) && address(_ethUsdFeed) != address(0), "OL: zero address");
         positionManager = _positionManager;
         swapRouter = _swapRouter;
-        poolFactory = ICLFactory(_positionManager.factory());
+        poolFactory = IUniswapV3Factory(_positionManager.factory());
         v4PoolManager = _v4PoolManager;
         tokenFactory = new OAATokenFactory();
         weth = _weth;
         ethUsdFeed = _ethUsdFeed;
         sequencerFeed = _sequencerFeed;
         feedScale = 10 ** uint256(_ethUsdFeed.decimals());
-        require(ICLFactory(_positionManager.factory()).tickSpacingToFee(TICK_SPACING) == 10_000, "OL: not the 1% tier");
+        require(IUniswapV3Factory(_positionManager.factory()).feeAmountTickSpacing(FEE) == TICK_SPACING, "OL: not the 1% tier");
         owner = msg.sender;
         treasury = _treasury;
         emit OwnershipTransferred(address(0), msg.sender);
@@ -232,7 +246,7 @@ contract OAALaunchpad is ReentrancyGuard {
         // CREATE2 with an unpredictable salt: nobody can pre-create the pool for the next token address
         bytes32 salt = keccak256(abi.encode(msg.sender, allTokens.length, blockhash(block.number - 1), name, symbol));
         token = tokenFactory.create(salt, name, symbol, msg.sender, metadata);
-        require(poolFactory.getPool(token, weth, TICK_SPACING) == address(0), "OL: pool exists");
+        require(poolFactory.getPool(token, weth, FEE) == address(0), "OL: pool exists");
         bool tokenIsToken0 = token < weth;
 
         int24[4] memory t;
@@ -252,24 +266,30 @@ contract OAALaunchpad is ReentrancyGuard {
         uint256[3] memory amounts = [SUPPLY * SHARE_0 / 10_000, SUPPLY * SHARE_1 / 10_000, 0];
         amounts[2] = SUPPLY - amounts[0] - amounts[1];
 
+        // create the pool at the start price: just below range 1, so every range holds only the new token
+        l.pool = positionManager.createAndInitializePoolIfNecessary(
+            tokenIsToken0 ? token : weth,
+            tokenIsToken0 ? weth : token,
+            FEE,
+            tokenIsToken0 ? TickMath.getSqrtRatioAtTick(t[0]) - 1 : TickMath.getSqrtRatioAtTick(-t[0])
+        );
+        require(l.pool != address(0) && l.pool == poolFactory.getPool(token, weth, FEE), "OL: pool");
+
         for (uint256 i = 0; i < 3; i++) {
             int24 lower;
             int24 upper;
-            uint160 initPrice;
             if (tokenIsToken0) {
                 lower = t[i];
                 upper = t[i + 1];
-                if (i == 0) initPrice = TickMath.getSqrtRatioAtTick(t[0]) - 1;
             } else {
                 lower = -t[i + 1];
                 upper = -t[i];
-                if (i == 0) initPrice = TickMath.getSqrtRatioAtTick(-t[0]);
             }
             (uint256 tokenId,,,) = positionManager.mint(
                 INonfungiblePositionManager.MintParams({
                     token0: tokenIsToken0 ? token : weth,
                     token1: tokenIsToken0 ? weth : token,
-                    tickSpacing: TICK_SPACING,
+                    fee: FEE,
                     tickLower: lower,
                     tickUpper: upper,
                     amount0Desired: tokenIsToken0 ? amounts[i] : 0,
@@ -277,14 +297,12 @@ contract OAALaunchpad is ReentrancyGuard {
                     amount0Min: 0,
                     amount1Min: 0,
                     recipient: address(this),
-                    deadline: block.timestamp,
-                    sqrtPriceX96: initPrice
+                    deadline: block.timestamp
                 })
             );
             l.positions[i] = tokenId;
         }
         l.startTick = tokenIsToken0 ? t[0] : -t[0];
-        l.pool = poolFactory.getPool(token, weth, TICK_SPACING);
 
         uint256 dust = IERC20(token).balanceOf(address(this));
         if (dust > 0) require(IERC20(token).transfer(DEAD, dust), "OL: burn failed");
@@ -295,12 +313,11 @@ contract OAALaunchpad is ReentrancyGuard {
             IWETH9Minimal(weth).deposit{value: msg.value}();
             IWETH9Minimal(weth).approve(address(swapRouter), msg.value);
             bought = swapRouter.exactInputSingle(
-                ISwapRouter.ExactInputSingleParams({
+                IV3SwapRouter.ExactInputSingleParams({
                     tokenIn: weth,
                     tokenOut: token,
-                    tickSpacing: TICK_SPACING,
+                    fee: FEE,
                     recipient: msg.sender,
-                    deadline: block.timestamp,
                     amountIn: msg.value,
                     amountOutMinimum: 0,
                     sqrtPriceLimitX96: 0
@@ -405,7 +422,7 @@ contract OAALaunchpad is ReentrancyGuard {
         require(IERC20(weth).transfer(msg.sender, owed), "OL: pay failed");
     }
 
-    /// @dev Swap price limit for the Slipstream buyback: ~3% beyond the 30-minute average (0 = no price history yet).
+    /// @dev Swap price limit for the Uniswap V3 buyback: ~3% beyond the 30-minute average (0 = no price history yet).
     function _slipLimit(address pool, bool zeroForOne) internal view returns (uint160) {
         uint32[] memory ago = new uint32[](2);
         ago[0] = TWAP_SECONDS;
@@ -538,10 +555,10 @@ contract OAALaunchpad is ReentrancyGuard {
         emit TreasuryChanged(_treasury);
     }
 
-    /// @notice Sets $OAA (only once) and its Aerodrome Slipstream WETH pool for the buyback.
-    function setBuybackPool(address token, int24 tickSpacing) external onlyOwner {
+    /// @notice Sets $OAA (only once) and its Uniswap V3 WETH pool (by fee tier, e.g. 10000 = 1%) for the buyback.
+    function setBuybackPool(address token, uint24 fee) external onlyOwner {
         _setBuybackToken(token);
-        address pool = poolFactory.getPool(token, weth, tickSpacing);
+        address pool = poolFactory.getPool(token, weth, fee);
         require(pool != address(0), "OL: no pool");
         buybackPool = pool;
         buybackIsV4 = false;
@@ -578,7 +595,7 @@ contract OAALaunchpad is ReentrancyGuard {
         buybackToken = token;
     }
 
-    /// @notice The Uniswap V4 pool key used for the $OAA buyback (empty when Slipstream is used).
+    /// @notice The Uniswap V4 pool key used for the $OAA buyback (empty when a V3 pool is used).
     function buybackKeyV4() external view returns (IPoolManagerV4.PoolKey memory) {
         return _v4Key;
     }

@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Deploy OAA Launchpad</title>
+<link rel="icon" href="/assets/favicon-32.png">
+<link rel="stylesheet" href="/assets/lp/lp.css?v=20261102a">
+<style>
+@font-face{font-family:Inter;src:url(/assets/lp/inter-latin-400-normal.woff2) format('woff2');font-weight:400;font-display:swap}
+@font-face{font-family:Inter;src:url(/assets/lp/inter-latin-600-normal.woff2) format('woff2');font-weight:600;font-display:swap}
+@font-face{font-family:Michroma;src:url(/assets/michroma.woff2) format('woff2');font-display:swap}
+:root{--bg:#030607;--fg:#e9f0f3;--muted:rgba(233,240,243,.62);--faint:rgba(233,240,243,.38);--line:rgba(255,255,255,.09);--acc:#33d1c9;--acc2:#7ff3ec}
+*{box-sizing:border-box}html,body{margin:0}
+body{background:radial-gradient(1200px 600px at 50% -10%,rgba(51,209,201,.08),transparent 60%),var(--bg);color:var(--fg);font:400 14px/1.55 Inter,Arial,sans-serif;min-height:100vh}
+.wrap{width:min(860px,100%);margin:0 auto;padding:40px 16px 80px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:34px}
+.brand{display:flex;align-items:center;gap:12px;font:400 15px/1 Michroma,Arial,sans-serif;letter-spacing:.32em;color:var(--fg);text-decoration:none}
+.brand img{width:32px;height:32px}
+.eyebrow{font:600 11px/1 Inter,Arial,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:var(--acc2);margin:0 0 10px}
+h1{font:600 clamp(26px,4vw,38px)/1.15 Inter,Arial,sans-serif;margin:0 0 10px;letter-spacing:-.01em}
+.lead{color:var(--muted);margin:0 0 28px;max-width:640px}
+.card{border-radius:20px;border:1px solid var(--line);background:linear-gradient(170deg,rgba(14,22,24,.8),rgba(4,8,9,.85));padding:22px;margin-bottom:16px}
+.card h2{font:600 17px/1.3 Inter,Arial,sans-serif;margin:0 0 4px;display:flex;align-items:center;gap:10px}
+.card h2 i{flex:0 0 26px;height:26px;border-radius:50%;display:grid;place-items:center;font:600 12px Inter;font-style:normal;border:1px solid rgba(127,243,236,.35);color:var(--acc2)}
+.card.done h2 i{background:var(--acc);color:#031012;border-color:var(--acc)}
+.card p{color:var(--muted);margin:6px 0 14px}
+.kv{display:grid;grid-template-columns:150px 1fr;gap:6px 14px;font-size:12.5px;margin:0 0 16px}
+.kv span{color:var(--faint)}.kv code{font:500 12px ui-monospace,Menlo,monospace;word-break:break-all;color:var(--fg)}
+.kv a{color:var(--acc2)}
+.btn{height:44px;padding:0 18px;border-radius:12px;border:1px solid var(--line);background:rgba(255,255,255,.04);color:var(--fg);cursor:pointer;display:inline-flex;align-items:center;gap:8px;font:600 13px Inter,Arial,sans-serif}
+.btn:hover{border-color:rgba(127,243,236,.45)}
+.btn-p{background:linear-gradient(180deg,#5ee8df,#26b9b1);color:#031012;border:0}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+input.in,select.in{width:100%;height:44px;border-radius:12px;border:1px solid var(--line);background:rgba(0,0,0,.3);color:var(--fg);padding:0 14px;font:500 13px ui-monospace,Menlo,monospace;margin-bottom:12px}
+.row{display:flex;gap:10px;flex-wrap:wrap}
+select.in{font-family:Inter,Arial,sans-serif;color-scheme:dark}
+.note{font-size:12px;color:var(--faint);margin-top:28px}
+@media (max-width:600px){.kv{grid-template-columns:1fr}.kv span{margin-top:6px}}
+</style>
+<style>.brand .bp{font:400 9.5px/1 Michroma,Eurostile,Arial,sans-serif;letter-spacing:.34em;color:rgba(191,247,243,.75);margin-left:-4px;white-space:nowrap}</style><link rel="stylesheet" href="/assets/lp/sia.css?v=20261102e"></head>
+<body data-sia-quick="What is $OAA?|How does the launchpad work?|What is the OAA Treasury?">
+<div class="wrap">
+ <div class="top"><a class="brand" href="https://oaap.si/"><img src="/assets/lp/oaa-logo.svg" alt="">OAA<span class="bp">PROTOCOL</span></a><button class="wbtn" id="wBtn" type="button"><span class="dot"></span><span id="wTxt">Connect wallet</span></button></div>
+ <p class="eyebrow">Internal · not linked from the site</p>
+ <h1>Deploy the OAA Launchpad and launch $OAA</h1>
+ <p class="lead">Your wallet deploys the contract and signs every step. Nothing is sent without your confirmation in the wallet. Keep about 0.002 ETH on Base for the network fees.</p>
+
+ <div class="card" id="c1"><h2><i>1</i>Deploy the contract</h2>
+  <p>OAALaunchpad, compiled with <span id="solc">solc</span>, optimizer 200 runs. Constructor values (all fixed Base contracts):</p>
+  <div class="kv" id="args"></div>
+  <button class="btn btn-p" id="deployBtn" type="button">Deploy with my wallet</button>
+  <div class="st-line" id="s1"><i></i><span></span></div>
+ </div>
+
+ <div class="card" id="c2"><h2><i>2</i>Verify the source code</h2>
+  <p>Publishes the exact source code on Sourcify, so BaseScan and every wallet can read it.</p>
+  <input class="in" id="lpAddr" placeholder="Launchpad address 0x…" spellcheck="false">
+  <button class="btn" id="verifyBtn" type="button">Verify on Sourcify</button>
+  <div class="st-line" id="s2"><i></i><span></span></div>
+ </div>
+
+ <div class="card" id="cP"><h2><i>2b</i>Keep launches closed until $OAA is live</h2>
+  <p>Pause right after the deploy: nobody can launch a token while paused (trading of existing tokens is never affected). Unpause on launch day. Only the owner can do this; do it before step 3.</p>
+  <div class="kv"><span>Status</span><code id="pState">unknown</code></div>
+  <div class="row"><button class="btn btn-p" id="pauseBtn" type="button">Pause launches</button><button class="btn" id="unpauseBtn" type="button">Open launches</button><button class="btn" id="pCheck" type="button">Check status</button></div>
+  <div class="st-line" id="sP"><i></i><span></span></div>
+ </div>
+
+ <div class="card" id="cH1"><h2><i>L1</i>Deploy the $OAA launch hook <small style="font:500 12px Inter;color:var(--faint)">(before launch day)</small></h2>
+  <p>The hook guards the $OAA pool on Uniswap V4: in the first 10 minutes the fee falls from 25% to 1%; in the first 5 minutes a single buy can be at most 20,000,000 $OAA and each wallet can buy once per block (no limit on the total). From minute 10 everything is at 1%. The connected wallet becomes the only wallet that can launch, so connect the wallet that holds the $OAA. Compiled with <span id="hkSolc">solc</span>.</p>
+  <div class="kv"><span>Uniswap V4 PoolManager</span><code>0x498581fF718922c3f8e6A244956aF099B2652b2b</code><span>$OAA token</span><code>0x70107c4AA2DC031eF7afc350e03784c2325aBE29</code><span>Fees go to</span><code>0xC394d05d8Da6d1414F1A1b0e8d31fec77FAeB834 (Treasury Safe)</code><span>Launcher</span><code>the connected wallet</code></div>
+  <button class="btn btn-p" id="hkDeploy" type="button">Deploy hook with my wallet</button>
+  <div class="st-line" id="sH1"><i></i><span></span></div>
+ </div>
+
+ <div class="card" id="cH2"><h2><i>L2</i>Verify the hook</h2>
+  <p>Publishes the exact source code of the hook on Sourcify, so everyone can read the anti-sniper rules.</p>
+  <input class="in" id="hkAddr" placeholder="Hook address 0x…" spellcheck="false">
+  <button class="btn" id="hkVerify" type="button">Verify on Sourcify</button>
+  <div class="st-line" id="sH2"><i></i><span></span></div>
+ </div>
+
+ <div class="card" id="cH3"><h2><i>L3</i>Launch $OAA <small style="font:500 12px Inter;color:var(--faint)">(launch day)</small></h2>
+  <p>One transaction creates the $OAA / ETH pool, puts your $OAA in as one-sided liquidity in three ranges (no ETH needed) and makes your first buy at the normal 1% fee. Nobody can trade in that block. The liquidity is locked in the hook forever; its trading fees go to the Treasury Safe.</p>
+  <div class="row" style="margin-bottom:12px">
+   <label style="flex:1 1 180px;font-size:12px;color:var(--faint)">Start market cap (USD)<input class="in" id="hkMc" value="20000" style="margin:6px 0 0"></label>
+   <label style="flex:1 1 180px;font-size:12px;color:var(--faint)">Your first buy (USD)<input class="in" id="hkBuy" value="1000" style="margin:6px 0 0"></label>
+  </div>
+  <div class="row" style="margin-bottom:12px">
+   <label style="flex:1 1 180px;font-size:12px;color:var(--faint)">Range 1: $OAA<input class="in" id="hkA1" value="400000000" style="margin:6px 0 0"></label>
+   <label style="flex:1 1 180px;font-size:12px;color:var(--faint)">Range 1 ends at market cap (USD)<input class="in" id="hkM1" value="1000000" style="margin:6px 0 0"></label>
+  </div>
+  <div class="row" style="margin-bottom:12px">
+   <label style="flex:1 1 180px;font-size:12px;color:var(--faint)">Range 2: $OAA<input class="in" id="hkA2" value="200000000" style="margin:6px 0 0"></label>
+   <label style="flex:1 1 180px;font-size:12px;color:var(--faint)">Range 2 ends at market cap (USD)<input class="in" id="hkM2" value="50000000" style="margin:6px 0 0"></label>
+  </div>
+  <div class="row" style="margin-bottom:12px">
+   <label style="flex:1 1 180px;font-size:12px;color:var(--faint)">Range 3: $OAA<input class="in" id="hkA3" value="100000000" style="margin:6px 0 0"></label>
+   <label style="flex:1 1 180px;font-size:12px;color:var(--faint)">Range 3 ends at market cap (USD)<input class="in" id="hkM3" value="1000000000" style="margin:6px 0 0"></label>
+  </div>
+  <div class="kv" id="hkPlan"></div>
+  <div class="row"><button class="btn" id="hkCheck" type="button">Check &amp; simulate</button><button class="btn" id="hkApprove" type="button">Approve $OAA</button><button class="btn btn-p" id="hkLaunch" type="button" disabled>Launch $OAA</button></div>
+  <div class="row" style="margin-top:10px"><button class="btn" id="hkFee" type="button">Current pool fee</button><button class="btn" id="hkCollect" type="button">Send pool fees to the Treasury</button></div>
+  <div class="st-line" id="sH3"><i></i><span></span></div>
+ </div>
+
+ <div class="card" id="cB"><h2><i>2c</i>Set the $OAA buyback pool <small style="font:500 12px Inter;color:var(--faint)">(on launch day, after the $OAA pool exists)</small></h2>
+  <p>Tells the launchpad which Uniswap V4 pool to use: 0.3% of every buy (paid in ETH) buys $OAA there and sends it to the burn address. Until this is set the ETH waits safely in the contract and is spent later. For the pool from step L3 use fee 8388608 (dynamic), tick spacing 200 and the hook address; they are filled in after the launch. Only the owner, so do it before step 3.</p>
+  <div class="kv"><span>$OAA token</span><code>0x70107c4AA2DC031eF7afc350e03784c2325aBE29</code><span>Status</span><code id="bState">unknown</code></div>
+  <div class="row" style="margin-bottom:12px"><select class="in" id="bPair" style="flex:1 1 180px;margin:0"><option value="0x0000000000000000000000000000000000000000">Paired with ETH (native)</option><option value="0x4200000000000000000000000000000000000006">Paired with WETH</option></select><input class="in" id="bFee" value="10000" style="flex:1 1 120px;margin:0" aria-label="Pool fee" title="Pool fee in millionths: 10000 = 1%"><input class="in" id="bTs" value="200" style="flex:1 1 120px;margin:0" aria-label="Tick spacing" title="Tick spacing of the pool"><input class="in" id="bHook" placeholder="Hook address (empty = no hook)" style="flex:1 1 100%;margin:0" spellcheck="false"></div>
+  <div class="row"><button class="btn btn-p" id="bSet" type="button">Set buyback pool</button><button class="btn" id="bCheck" type="button">Check status</button></div>
+  <div class="st-line" id="sB"><i></i><span></span></div>
+ </div>
+
+ <div class="card" id="cR1"><h2><i>A1</i>Deploy the OAA Agent Registry <small style="font:500 12px Inter;color:var(--faint)">(on-chain agents)</small></h2>
+  <p>Anyone can register an SI agent; clients pay per job in ETH or USDC, the payment waits in the contract until the agent delivers, then 80% goes to the agent owner and 20% to the Treasury Safe (100% for OAA's own agents). The deploying wallet is the admin (verify / suspend agents, cannot move funds); hand it to the Safe later. Compiled with <span id="rgSolc">solc</span>.</p>
+  <div class="kv"><span>Treasury</span><code>0xC394d05d8Da6d1414F1A1b0e8d31fec77FAeB834 (Treasury Safe)</code><span>USDC on Base</span><code>0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913</code></div>
+  <label style="display:block;font-size:12px;color:var(--faint)">Registration fee per agent in ETH (0 to 0.05, goes to the Treasury)<input class="in" id="rgFee" value="0.002" style="margin:6px 0 12px"></label>
+  <button class="btn btn-p" id="rgDeploy" type="button">Deploy registry with my wallet</button>
+  <div class="st-line" id="sR1"><i></i><span></span></div>
+ </div>
+
+ <div class="card" id="cR2"><h2><i>A2</i>Verify the registry</h2>
+  <p>Publishes the exact source code on Sourcify, so everyone can read the rules.</p>
+  <input class="in" id="rgAddr" placeholder="Registry address 0x…" spellcheck="false">
+  <button class="btn" id="rgVerify" type="button">Verify on Sourcify</button>
+  <div class="st-line" id="sR2"><i></i><span></span></div>
+ </div>
+
+ <div class="card" id="cR3"><h2><i>A3</i>Register the OAA agents</h2>
+  <p>Puts OAA's own agents into the registry and marks them as “OAA agent” and “verified”, so 100% of their jobs go to the Treasury Safe. Prices in USDC, delivery within 30 minutes. Two confirmations per agent: registration (with the registration fee, which goes to the Treasury) and the OAA mark. Only the registry admin.</p>
+  <label style="display:block;font-size:12px;color:var(--faint)">Agent wallet (the wallet of the agent runner that delivers results)<input class="in" id="rgOp" value="0xc2118c2472F557608b6B5C803F4dFE38eE2465E8" spellcheck="false" style="margin:6px 0 10px"></label>
+  <div id="rgList" style="margin-bottom:12px"></div>
+  <button class="btn btn-p" id="rgOaa" type="button">Register selected OAA agents</button>
+  <div class="st-line" id="sR3"><i></i><span></span></div>
+ </div>
+
+ <div class="card" id="c3"><h2><i>3</i>Hand the admin rights to the Treasury Safe <small style="font:500 12px Inter;color:var(--faint)">(on launch day, after opening)</small></h2>
+  <p>Starts the 2-step ownership transfer to the OAA Treasury Safe. Afterwards the Safe owners confirm <b>acceptOwnership()</b> in the Safe app. The owner can only pause new launches, and change the treasury address; liquidity and fees can never be touched.</p>
+  <div class="kv"><span>Treasury Safe</span><code>0xC394d05d8Da6d1414F1A1b0e8d31fec77FAeB834</code></div>
+  <div class="row"><button class="btn" id="ownBtn" type="button">Start transfer to the Safe</button></div>
+  <div class="st-line" id="s3"><i></i><span></span></div>
+ </div>
+ <p class="note">After step 1 the website reads the launchpad address automatically once it is set in the OAA backend. Contract sources: github.com/oaaprotocol/website.</p>
+</div>
+<script src="/assets/lp/lp.js?v=20261102a"></script>
+<script src="/assets/lp/deploy.js?v=20261107uni"></script>
+<script src="/assets/lp/sha3.min.js?v=0.8.0"></script>
+<script src="/assets/lp/hook.js?v=20261104d"></script>
+<script src="/assets/vendor/ethers.umd.min.js?v=6.17.0"></script>
+<script src="/assets/lp/registry-deploy.js?v=20261105b"></script>
+<script src="/assets/lp/sia.js?v=20261102e"></script></body>
+</html>

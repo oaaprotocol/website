@@ -3,8 +3,8 @@
   'use strict';
   var L = window.OAALP, $ = function (s) { return document.querySelector(s); };
   var ARGS = [
-    ['_positionManager', '0xe1f8cd9AC4e4A65F54f38a5CdAfCA44f6dD68b53', 'Aerodrome Slipstream position manager'],
-    ['_swapRouter', '0x698Cb2b6dd822994581fEa6eA4Fc755d1363A92F', 'Aerodrome Slipstream swap router'],
+    ['_positionManager', '0x03a520b32C04BF3bEEf7BEb72E919cf822Ed34f1', 'Uniswap V3 position manager'],
+    ['_swapRouter', '0x2626664c2603336E57B271c5C0b26F421741e481', 'Uniswap SwapRouter02'],
     ['_v4PoolManager', '0x498581fF718922c3f8e6A244956aF099B2652b2b', 'Uniswap V4 PoolManager (only for the $OAA buyback)'],
     ['_weth', '0x4200000000000000000000000000000000000006', 'WETH on Base'],
     ['_ethUsdFeed', '0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70', 'Chainlink ETH / USD'],
@@ -17,7 +17,7 @@
   var wb = $('#wBtn');
   L.onAccount(function (a) { wb.classList.toggle('on', !!a); $('#wTxt').textContent = a ? L.short(a) : 'Connect wallet'; });
   wb.onclick = function () { L.connect().catch(function () {}); };
-  fetch('/assets/lp/launchpad-build.json?v=20261102k').then(function (r) { return r.json(); }).then(function (b) { build = b; $('#solc').textContent = 'solc ' + b.compiler; });
+  fetch('/assets/lp/launchpad-build.json?v=20261107uni').then(function (r) { return r.json(); }).then(function (b) { build = b; $('#solc').textContent = 'solc ' + b.compiler; });
   try { var saved = localStorage.getItem('oaa_lp_addr'); if (saved) $('#lpAddr').value = saved; } catch (e) {}
 
   $('#deployBtn').onclick = async function () {
@@ -105,7 +105,7 @@
   async function bbState(addr) {
     var v4 = BigInt(await L.call(addr, '0x422242f2')) !== 0n, pool = L.wordAddr(await L.call(addr, '0x47446570'), 0);
     var res = BigInt(await L.call(addr, '0xff909560')), burned = BigInt(await L.call(addr, '0xc4eecf8e'));
-    $('#bState').textContent = (/^0x0{40}$/i.test(pool) ? 'not set yet' : (v4 ? 'Uniswap V4 set' : 'Aerodrome set')) + ' · waiting ' + (Number(res) / 1e18).toFixed(6) + ' ETH · burned ' + Math.round(Number(burned) / 1e18).toLocaleString('en-US') + ' OAA';
+    $('#bState').textContent = (/^0x0{40}$/i.test(pool) ? 'not set yet' : (v4 ? 'Uniswap V4 set' : 'Uniswap V3 set')) + ' · waiting ' + (Number(res) / 1e18).toFixed(6) + ' ETH · burned ' + Math.round(Number(burned) / 1e18).toLocaleString('en-US') + ' OAA';
   }
   $('#bCheck').onclick = function () { var addr = $('#lpAddr').value.trim(); if (L.isAddr(addr)) bbState(addr).catch(function (e) { S('#sB', 'err', L.esc(L.errText(e))); }); };
   $('#bSet').onclick = async function () {
