@@ -164,9 +164,21 @@
     if (ci > -1) span.appendChild(el('span', 'tk-c', line.slice(ci)));
     return span;
   }
+  // every picture appears only once in the build log
+  var USED = {}, COVERS = ['agents', 'launchpad', 'token', 'risk', 'code', 'website'].map(function (n) { return 'assets/updates/' + n + '.webp'; })
+    .concat(['assets/oaa-shore-960.webp', 'assets/oaa-room-960.webp', 'assets/oaa-sky-960.webp', 'assets/oaa-dancer-sm.webp']);
+  function pic(n) { return String(n).split('/').pop().toLowerCase().replace(/\.(webp|png|jpe?g|gif|avif)$/, '').replace(/([-_@](\d{2,4}w?|\dx|small|large|sm|lg|hd|4k))+$/, ''); } // same picture in another size counts once
+  // picks the picture for a card: a free cover first (its topic first), else a real scene picture from the commit
+  var JUNK = /^assets\/(updates|av|blog|lp\/coins|icons?)\/|(^|\/)av-|rim|led|fx-|logo|icon|sprite|thumb|og-|favicon/i;
+  function choose(tag, imgs) {
+    var c = COVERS.filter(function (x) { return !USED[pic(x)] && x.indexOf('/' + String(tag).toLowerCase() + '.') > -1; })[0] || COVERS.filter(function (x) { return !USED[pic(x)]; })[0];
+    if (!c) c = (imgs || []).filter(function (n) { return /^[\w\/.\-]+$/.test(n) && !/\.\./.test(n) && !JUNK.test(n) && !USED[pic(n)]; })[0];
+    if (c) USED[pic(c)] = 1;
+    return c || null;
+  }
   function art(list, tag, num, imgs) {
     var box = el('div', 'uu-art'); box.setAttribute('aria-hidden', 'true');
-    var safe = (imgs || []).filter(function (n) { return /^[\w\/.\-]+$/.test(n) && !/\.\./.test(n); });
+    var safe = imgs ? [imgs] : []; // chosen in choose(): one picture, never used twice
     if (safe.length) {
       box.classList.add('uu-art-img');
       var im = el('img'); im.src = '/' + safe[0]; im.alt = ''; im.loading = 'lazy'; im.decoding = 'async';
@@ -217,6 +229,7 @@
 
   function fill(list) {
     list.setAttribute('data-gh', '1');
+    USED = {};
     var p = list.closest('.uu-wrap') || list.parentNode, staticN = list.querySelectorAll('.uu:not(.uu-gh)').length;
     load().then(function (commits) {
       var groups = {}, order = [];
@@ -230,8 +243,10 @@
       if (!res.length) return;
       var old = list.querySelector('.uu-new'); if (old) old.remove();
       var first = list.firstChild;
+      var us = res.map(function (x) { return build(x.g, x.r); });
+      for (var k = us.length - 1; k >= 0; k--) us[k].img = choose(us[k].tag, us[k].img); // newest updates get the covers first
       res.forEach(function (x, i) {
-        var u = build(x.g, x.r), n = staticN + i + 1, latest = i === res.length - 1;
+        var u = us[i], n = staticN + i + 1, latest = i === res.length - 1;
         var link = x.g.commits.length === 1 ? x.g.commits[0].html_url : 'https://github.com/' + REPO + '/commits/main?since=' + x.g.day + '&until=' + x.g.day;
         var a = render(list, u, n, x.g.day, latest, link);
         list.insertBefore(a, first); first = a;
