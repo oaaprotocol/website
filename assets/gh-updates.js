@@ -180,6 +180,7 @@
     var safe = imgs ? [imgs] : []; // chosen in choose(): one picture, never used twice
     if (safe.length) {
       box.classList.add('uu-art-img');
+      box.style.setProperty('--cv', "url('/" + safe[0] + "')"); // the card shows its picture as background (the img stays as fallback)
       var im = el('img'); im.src = '/' + safe[0]; im.alt = ''; im.loading = 'lazy'; im.decoding = 'async';
       im.onerror = function () { im.remove(); box.classList.remove('uu-art-img'); addSvg(); };
       im.onload = function () { if (im.naturalWidth && im.naturalWidth < 700) box.classList.add('uu-art-fit'); };
