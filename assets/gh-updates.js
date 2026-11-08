@@ -165,13 +165,12 @@
     return span;
   }
   // every picture appears only once in the build log
-  var USED = {}, COVERS = ['agents', 'launchpad', 'token', 'risk', 'code'].map(function (n) { return 'assets/updates/' + n + '.webp'; })
-    .concat(['assets/oaa-shore-960.webp', 'assets/oaa-room-960.webp', 'assets/oaa-sky-960.webp', 'assets/oaa-dancer-sm.webp']);
+  var USED = {}, COVERS = ['agents-1', 'launchpad-1', 'token-1', 'risk-1', 'code-1', 'website-1', 'agents-2', 'token-2', 'code-2', 'website-2'].map(function (n) { return 'assets/updates/gh-' + n + '.webp'; });
   function pic(n) { return String(n).split('/').pop().toLowerCase().replace(/\.(webp|png|jpe?g|gif|avif)$/, '').replace(/([-_@](\d{2,4}w?|\dx|small|large|sm|lg|hd|4k))+$/, ''); } // same picture in another size counts once
   // picks the picture for a card: a free cover first (its topic first), else a real scene picture from the commit
   var JUNK = /^assets\/(updates|av|blog|lp\/coins|icons?)\/|(^|\/)av-|rim|led|fx-|logo|icon|sprite|thumb|og-|favicon/i;
   function choose(tag, imgs) {
-    var c = COVERS.filter(function (x) { return !USED[pic(x)] && x.indexOf('/' + String(tag).toLowerCase() + '.') > -1; })[0] || COVERS.filter(function (x) { return !USED[pic(x)]; })[0];
+    var c = COVERS.filter(function (x) { return !USED[pic(x)] && x.indexOf('/gh-' + String(tag).toLowerCase() + '-') > -1; })[0] || COVERS.filter(function (x) { return !USED[pic(x)]; })[0];
     if (!c) c = (imgs || []).filter(function (n) { return /^[\w\/.\-]+$/.test(n) && !/\.\./.test(n) && !JUNK.test(n) && !USED[pic(n)]; })[0];
     if (c) USED[pic(c)] = 1;
     return c || null;
