@@ -1,5 +1,5 @@
 {
-  "_help": "Fill in when the locks exist. wallet = Base address (0x...). lock_url = link to the lock proof (UNCX, PinkLock, Safe, BaseScan). Leave empty until ready. The website and Sia both read this file.",
+  "_help": "Fill in when the locks exist. wallet = Base address (0x...). lock_url = link to the lock proof. Liquidity: wallet and lock_url = the OAA launch hook contract on BaseScan (it holds the liquidity, no remove function). The website and Sia both read this file.",
   "token": {
     "address": "0x70107c4AA2DC031eF7afc350e03784c2325aBE29"
   },
@@ -7,8 +7,8 @@
     {
       "key": "liquidity",
       "name": "Liquidity Pool",
-      "wallet": "0x8df4b8a383dc81cc3d77084d5e38296554fe2b5f",
-      "lock_label": "UNCX",
+      "wallet": "",
+      "lock_label": "OAA launch hook \u00b7 locked forever",
       "lock_url": ""
     },
     {
