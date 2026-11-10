@@ -8,6 +8,7 @@ import {IERC20Minimal} from "@uniswap/v4-core/src/interfaces/external/IERC20Mini
 import {Hooks} from "@uniswap/v4-core/src/libraries/Hooks.sol";
 import {TickMath} from "@uniswap/v4-core/src/libraries/TickMath.sol";
 import {LPFeeLibrary} from "@uniswap/v4-core/src/libraries/LPFeeLibrary.sol";
+import {StateLibrary} from "@uniswap/v4-core/src/libraries/StateLibrary.sol";
 import {PoolKey} from "@uniswap/v4-core/src/types/PoolKey.sol";
 import {PoolId} from "@uniswap/v4-core/src/types/PoolId.sol";
 import {Currency} from "@uniswap/v4-core/src/types/Currency.sol";
@@ -29,7 +30,11 @@ import {LiquidityAmounts} from "@uniswap/v4-periphery/src/libraries/LiquidityAmo
 ///         The rules can never be changed.
 ///
 ///         The liquidity (all three ranges) belongs to this contract and has no remove function: it is locked forever.
-///         Trading fees from the position can be collected by anyone and always go to the treasury.
+///         Trading fees from the position can be collected by anyone. 10% of them (0.1% of the volume) are burned:
+///         the $OAA part is sent straight to the burn address, the ETH part buys $OAA in this pool and burns it
+///         (only after the 10-minute window, and never more than ~3% above a reference price seen at least 5 minutes
+///         earlier, so a short price spike cannot make the burn overpay; unspent ETH waits in the hook for the next burn).
+///         The other 90% (0.9% of the volume) go to the treasury.
 ///         There is no owner function to stop trading, change fees or move funds.
 contract OAALaunchHook is IHooks, IUnlockCallback {
     IPoolManager public immutable poolManager;
@@ -53,8 +58,25 @@ contract OAALaunchHook is IHooks, IUnlockCallback {
 
     mapping(address => uint256) public lastBuyBlock;
 
+    // ---- burn: 10% of the trading fees (0.1% of the volume)
+    address public constant DEAD = 0x000000000000000000000000000000000000dEaD;
+    uint256 public constant BURN_SHARE = 10; //            % of the collected fees that is burned
+    int24 public constant MAX_BURN_DEVIATION = 300; //    ~3% above the reference price at most
+    uint256 public constant REF_PERIOD = 5 minutes; //     the reference is a price seen at least 5 minutes earlier
+    uint256 public constant MIN_BURN_ETH = 0.0005 ether;
+    /// @notice ETH from the fees that waits to buy $OAA for the burn address.
+    uint256 public burnEthPending;
+    /// @notice Reference price of $OAA, as -tick ("higher = $OAA more expensive"): a price seen at an earlier collect,
+    ///         at least REF_PERIOD before (a falling price is followed at once). A pump in the same transaction or a few
+    ///         blocks before a collect can therefore never raise the price the burn is willing to pay.
+    int24 public burnRef;
+    uint64 public burnRefAt;
+    uint256 public totalBurnedOaa;
+    uint256 public totalBurnEthSpent;
+
     event Launched(PoolId indexed poolId, int24[4] ticks, uint256[3] amounts, uint256 launchEth, uint256 launchOaa);
     event FeesCollected(uint256 eth, uint256 oaa);
+    event Burned(uint256 oaaFromFees, uint256 ethSpent, uint256 oaaBought);
 
     error NotPoolManager();
     error NotLauncher();
@@ -172,10 +194,13 @@ contract OAALaunchHook is IHooks, IUnlockCallback {
             (bool ok,) = msg.sender.call{value: restEth}("");
             require(ok, "eth refund");
         }
+        (, int24 t,,) = StateLibrary.getSlot0(poolManager, key.toId());
+        burnRef = -t;
+        burnRefAt = uint64(block.timestamp);
         emit Launched(key.toId(), ticks, amounts, msg.value - restEth, oaaBought);
     }
 
-    /// @notice Sends the trading fees earned by the locked positions to the treasury. Anyone can call it.
+    /// @notice Collects the trading fees of the locked positions: 90% to the treasury, 10% burned. Anyone can call it.
     function collectFees() external returns (uint256 eth, uint256 oaaFees) {
         if (!launched) revert NotLaunched();
         bytes memory r = poolManager.unlock(abi.encode(uint8(1), uint256(0), uint256(0)));
@@ -227,9 +252,48 @@ contract OAALaunchHook is IHooks, IUnlockCallback {
             e += uint256(int256(fees.amount0()));
             o += uint256(int256(fees.amount1()));
         }
-        if (e > 0) poolManager.take(key.currency0, treasury, e);
-        if (o > 0) poolManager.take(key.currency1, treasury, o);
+        uint256 oBurn = o * BURN_SHARE / 100;
+        uint256 eBurn = e * BURN_SHARE / 100;
+        if (o > oBurn) poolManager.take(key.currency1, treasury, o - oBurn);
+        if (oBurn > 0) poolManager.take(key.currency1, DEAD, oBurn);
+        if (e > eBurn) poolManager.take(key.currency0, treasury, e - eBurn);
+        if (eBurn > 0) {
+            poolManager.take(key.currency0, address(this), eBurn);
+            burnEthPending += eBurn;
+        }
+        (uint256 spent, uint256 bought) = _burnSwap(key);
+        totalBurnedOaa += oBurn + bought;
+        if (oBurn > 0 || bought > 0) emit Burned(oBurn, spent, bought);
         return abi.encode(e, o);
+    }
+
+    /// @dev Buys $OAA with the pending burn ETH and sends it to the burn address, inside the current unlock.
+    ///      Skipped in the anti-sniper window, below MIN_BURN_ETH, or when $OAA is ~3% above the reference price.
+    function _burnSwap(PoolKey memory key) internal returns (uint256 spent, uint256 bought) {
+        (, int24 tick,,) = StateLibrary.getSlot0(poolManager, key.toId());
+        int24 p = -tick;
+        int24 ref = burnRef; // decided on the OLD reference
+        if (p < ref) {
+            burnRef = p;
+        } else if (block.timestamp >= uint256(burnRefAt) + REF_PERIOD) {
+            burnRef = p;
+            burnRefAt = uint64(block.timestamp);
+        }
+        uint256 pending = burnEthPending;
+        if (pending < MIN_BURN_ETH || block.timestamp < uint256(launchTime) + WINDOW) return (0, 0);
+        int24 limitP = ref + MAX_BURN_DEVIATION;
+        if (p >= limitP) return (0, 0);
+        int24 limitTick = -limitP;
+        if (limitTick <= TickMath.MIN_TICK) limitTick = TickMath.MIN_TICK + 1;
+        BalanceDelta d = poolManager.swap(
+            key, SwapParams({zeroForOne: true, amountSpecified: -int256(pending), sqrtPriceLimitX96: TickMath.getSqrtPriceAtTick(limitTick)}), ""
+        );
+        spent = uint256(int256(-d.amount0()));
+        bought = uint256(int256(d.amount1()));
+        if (spent > 0) poolManager.settle{value: spent}();
+        if (bought > 0) poolManager.take(key.currency1, DEAD, bought);
+        burnEthPending = pending - spent;
+        totalBurnEthSpent += spent;
     }
 
     // ------------------------------------------------------------------ hooks
